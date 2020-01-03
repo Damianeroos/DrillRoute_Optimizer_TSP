@@ -3,10 +3,17 @@
 
 #include <QMainWindow>
 #include <QFile>
+#include <QtXml>
+#include <QDebug>
+#include <QVector>
+#include <QtMath>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+
+
 
 class MainWindow : public QMainWindow
 {
@@ -24,5 +31,13 @@ private:
     Ui::MainWindow *ui;
     QString file_name;
     QFile file;
+    QDomDocument xml_file;
+
+    QVector<double> X,Y;
+    //returns  0 if there is no holes
+    int ReadHolesPosition(void);
 };
+
+
+
 #endif // MAINWINDOW_H

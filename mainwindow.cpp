@@ -13,6 +13,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->statusbar->showMessage("No .brd file has been loaded");
     ui->boardFileName->setText("../test.brd");
 
+    // give the axes some labels:
+    ui->customPlot->xAxis->setLabel("x");
+    ui->customPlot->yAxis->setLabel("y");
+    // set axes ranges, so we see all data:
+    ui->customPlot->xAxis->setRange(-10, 100);
+    ui->customPlot->yAxis->setRange(-10, 100);
+    ui->customPlot->replot();
+    ui->customPlot->setInteraction(QCP::iRangeDrag, true);
+
 
 }
 
@@ -56,6 +65,15 @@ void MainWindow::on_loadFileButton_clicked()
             for(int i=0;i < X.size(); i++){
                 qDebug()<<QString::number(X[i]) + " " + QString::number(Y[i]);
             }
+
+            // create graph and assign data to it:
+            ui->customPlot->addGraph();
+            ui->customPlot->graph(0)->setData(X, Y);
+            ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
+            ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
+            ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+
+            ui->customPlot->replot();
         }
     }
 
@@ -116,6 +134,24 @@ int MainWindow::ReadHolesPosition()
                                         }
                                         if(rot == "R90"){
                                             rad = qDegreesToRadians(90.00);
+                                            xp = pads.attribute("x").toDouble()-x;
+                                            yp = pads.attribute("y").toDouble()-y;
+                                            xpp = xp*qCos(rad)-yp*qSin(rad);
+                                            ypp = xp*qSin(rad)+yp*qCos(rad);
+                                            X.push_back(xpp+x);
+                                            Y.push_back(ypp+y);
+                                        }
+                                        if(rot == "R180"){
+                                            rad = qDegreesToRadians(180.00);
+                                            xp = pads.attribute("x").toDouble()-x;
+                                            yp = pads.attribute("y").toDouble()-y;
+                                            xpp = xp*qCos(rad)-yp*qSin(rad);
+                                            ypp = xp*qSin(rad)+yp*qCos(rad);
+                                            X.push_back(xpp+x);
+                                            Y.push_back(ypp+y);
+                                        }
+                                        if(rot == "R270"){
+                                            rad = qDegreesToRadians(270.00);
                                             xp = pads.attribute("x").toDouble()-x;
                                             yp = pads.attribute("y").toDouble()-y;
                                             xpp = xp*qCos(rad)-yp*qSin(rad);

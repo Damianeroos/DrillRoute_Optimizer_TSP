@@ -36,13 +36,13 @@
      </item>
     </layout>
    </widget>
-   <widget class="QTextBrowser" name="textBrowser">
+   <widget class="QCustomPlot" name="customPlot" native="true">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>60</y>
-      <width>256</width>
-      <height>192</height>
+      <x>119</x>
+      <y>29</y>
+      <width>631</width>
+      <height>431</height>
      </rect>
     </property>
    </widget>
@@ -59,6 +59,14 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

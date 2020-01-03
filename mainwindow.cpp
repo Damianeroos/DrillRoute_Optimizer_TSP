@@ -22,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->customPlot->replot();
     ui->customPlot->setInteraction(QCP::iRangeDrag, true);
 
+    ui->comboBoxAlg->addItem("NN");
+
 
 }
 
@@ -134,8 +136,8 @@ int MainWindow::ReadHolesPosition()
                                         }
                                         if(rot == "R90"){
                                             rad = qDegreesToRadians(90.00);
-                                            xp = pads.attribute("x").toDouble()-x;
-                                            yp = pads.attribute("y").toDouble()-y;
+                                            xp = pads.attribute("x").toDouble();
+                                            yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
                                             X.push_back(xpp+x);
@@ -143,8 +145,8 @@ int MainWindow::ReadHolesPosition()
                                         }
                                         if(rot == "R180"){
                                             rad = qDegreesToRadians(180.00);
-                                            xp = pads.attribute("x").toDouble()-x;
-                                            yp = pads.attribute("y").toDouble()-y;
+                                            xp = pads.attribute("x").toDouble();
+                                            yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
                                             X.push_back(xpp+x);
@@ -152,8 +154,8 @@ int MainWindow::ReadHolesPosition()
                                         }
                                         if(rot == "R270"){
                                             rad = qDegreesToRadians(270.00);
-                                            xp = pads.attribute("x").toDouble()-x;
-                                            yp = pads.attribute("y").toDouble()-y;
+                                            xp = pads.attribute("x").toDouble();
+                                            yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
                                             X.push_back(xpp+x);
@@ -172,4 +174,44 @@ int MainWindow::ReadHolesPosition()
 
     return 1;
 
+}
+
+double MainWindow::NN_algorithm()
+{
+    QVector<double> XP,YP;
+    XP = X;
+    YP = Y;
+    XP.push_front(0);//adding starting point (0,0)
+    YP.push_front(0);
+
+    int size = XP.size();
+    double distance = 0;
+
+    double ** distMat = new double* [size]; //creating distance matrix
+
+    for(int i = 0;i < size ; i++){
+        distMat[i] = new double [size];
+    }
+
+    //computing distance matrix
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
+        }
+    }
+
+
+    qDebug() << QString::number(size);
+
+    for(int i = 0;i < size ; i++){ //clearing distance matrix
+        delete [] distMat[i];
+    }
+    delete [] distMat;
+
+    return distance;
+}
+
+void MainWindow::on_startButton_clicked()
+{
+    NN_algorithm();
 }

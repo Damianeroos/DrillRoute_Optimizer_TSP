@@ -27,6 +27,8 @@ public:
 private slots:
     void on_loadFileButton_clicked();
 
+    void on_startButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString file_name;
@@ -36,6 +38,7 @@ private:
     QVector<double> X,Y;
     //returns  0 if there is no holes
     int ReadHolesPosition(void);
+    double NN_algorithm(void);
 };
 
 

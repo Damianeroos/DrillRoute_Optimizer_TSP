@@ -23,8 +23,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->customPlot->plotLayout()->addElement(0, 0, new QCPTextElement(ui->customPlot, "Empty plot", QFont("sans", 12, QFont::Bold)));
     ui->customPlot->replot();
     ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
-    ui->comboBoxAlg->addItem("FLFC"); //first loaded first choose
-    ui->comboBoxAlg->addItem("NN");
+    ui->comboBoxAlg->addItem("NP"); //natural permutation
+    ui->comboBoxAlg->addItem("NN"); //nearest neighbour
+    ui->comboBoxAlg->addItem("SA"); //simulated annealing
 
 
 }
@@ -213,11 +214,24 @@ double MainWindow::NN_algorithm()
     double bestDist = 99999999999;
     int bestPoint,i;
     bestPoint = -1;
-    permutation.push_back(0);//starting point is always at (0,0)
+   // permutation.push_back(0);//starting point is always at (0,0)
+
+    //first nearest hole
+    for(int i = 1 ; i < size ; i++){
+        if(bestDist > distMat[0][i] ){
+            bestPoint=i;
+            bestDist = distMat[0][i];
+        }
+    }
+    permutation.push_back(bestPoint);
+
+    distance += bestDist;
+    bestDist = 9999999999999;
+
     while(permutation.size()!=size){
 
 
-        for( i = 0; i < size ;i++){
+        for( i = 1; i < size ;i++){
 
             //can not pointing on the same element
             for(int j = 0; j <permutation.size();j++){
@@ -248,10 +262,10 @@ double MainWindow::NN_algorithm()
 
     Permutation = permutation;
 
-    return distance;
+    return ComputeDistance();
 }
 
-double MainWindow::FLFC_algorithm()
+double MainWindow::NP_algorithm()
 {
     QVector<double> XP,YP;
     QVector<int> permutation;
@@ -277,7 +291,7 @@ double MainWindow::FLFC_algorithm()
     }
 
     //starting algorithm
-    for(int i=0;i<size;i++){
+    for(int i=1;i<size;i++){
         permutation.push_back(i);
         if(i<size-1){
             distance += distMat[i][i+1];
@@ -292,8 +306,15 @@ double MainWindow::FLFC_algorithm()
 
     Permutation = permutation;
 
-    return distance;
+    return ComputeDistance();
 
+}
+
+double MainWindow::SA_algorithm()
+{
+    double distance = 0;
+
+    return distance;
 }
 
 void MainWindow::DrawPermutation()
@@ -307,9 +328,13 @@ void MainWindow::DrawPermutation()
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
-    ui->customPlot->replot();
 
-    for(int i = 1; i < Permutation.size()-1 ;i++){
+
+    //no permutation
+    if(Permutation.size()==0)
+        return;
+
+    for(int i = 0; i < Permutation.size()-1 ;i++){
         x[0] = X[Permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
         x[1] = X[Permutation[i+1]-1];
         y[0] = Y[Permutation[i]-1];
@@ -320,9 +345,9 @@ void MainWindow::DrawPermutation()
     }
     //adding first and last route
     x[0] = 0;
-    x[1] = X[Permutation[0]];
+    x[1] = X[Permutation[0]-1];
     y[0] = 0;
-    y[1] = Y[Permutation[0]];
+    y[1] = Y[Permutation[0]-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
@@ -333,17 +358,60 @@ void MainWindow::DrawPermutation()
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
+
+    //ui->customPlot->rescaleAxes();
     ui->customPlot->replot();
+}
+
+double MainWindow::ComputeDistance()
+{
+    QVector<double> XP,YP;
+    XP = X;
+    YP = Y;
+    XP.push_front(0);//adding starting point (0,0)
+    YP.push_front(0);
+
+    int size = XP.size();
+    double distance = 0;
+
+    double ** distMat = new double* [size]; //creating distance matrix
+
+    for(int i = 0;i < size ; i++){
+        distMat[i] = new double [size];
+    }
+
+    //computing distance matrix
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
+        }
+    }
+
+    for(int i=0;i<Permutation.size()-1;i++){
+        distance += distMat[Permutation[i]][Permutation[i+1]];
+    }
+
+    distance+=distMat[size-1][0];
+
+    for(int i = 0;i < size ; i++){ //clearing distance matrix
+        delete [] distMat[i];
+    }
+    delete [] distMat;
+
+    return distance;
 }
 
 void MainWindow::on_startButton_clicked()
 {
     switch (ui->comboBoxAlg->currentIndex()) {
     case 0 :
-        ui->lineDistance->setText(QString::number(FLFC_algorithm()));
+        ui->lineDistance->setText(QString::number(NP_algorithm()));
         break;
     case 1 :
         ui->lineDistance->setText(QString::number(NN_algorithm()));
+        break;
+    case 3 :
+        ui->lineDistance->setText(QString::number(SA_algorithm()));
         break;
     }
 

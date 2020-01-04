@@ -41,8 +41,10 @@ private:
     //returns  0 if there is no holes
     int ReadHolesPosition(void);
     double NN_algorithm(void);
-    double FLFC_algorithm(void);
+    double NP_algorithm(void);
+    double SA_algorithm(void);
     void DrawPermutation(void);
+    double ComputeDistance(void);
 };
 
 

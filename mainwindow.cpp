@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->customPlot->yAxis->setRange(-10, 100);
     ui->customPlot->replot();
     ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    ui->comboBoxAlg->addItem("FLFC"); //first loaded first choose
     ui->comboBoxAlg->addItem("NN");
 
 
@@ -239,31 +240,78 @@ double MainWindow::NN_algorithm()
     return distance;
 }
 
+double MainWindow::FLFC_algorithm()
+{
+    QVector<double> XP,YP;
+    QVector<int> permutation;
+    XP = X;
+    YP = Y;
+    XP.push_front(0);//adding starting point (0,0)
+    YP.push_front(0);
+
+    int size = XP.size();
+    double distance = 0;
+
+    double ** distMat = new double* [size]; //creating distance matrix
+
+    for(int i = 0;i < size ; i++){
+        distMat[i] = new double [size];
+    }
+
+    //computing distance matrix
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
+        }
+    }
+
+    //starting algorithm
+    for(int i=0;i<size;i++){
+        permutation.push_back(i);
+        if(i<size-1){
+            distance += distMat[i][i+1];
+        }
+    }
+    distance+=distMat[size-1][0];
+
+    for(int i = 0;i < size ; i++){ //clearing distance matrix
+        delete [] distMat[i];
+    }
+    delete [] distMat;
+
+    Permutation = permutation;
+
+    return distance;
+
+}
+
 void MainWindow::DrawPermutation()
 {
     QVector<double> x(2),y(2);
 
-    for(int i = 0; i < Permutation.size()-2 ;i++){
-        x[0] = X[i];
-        x[1] = X[i+1];
-        y[0] = Y[i];
-        y[1] = Y[i+1];
+
+
+    for(int i = 1; i < Permutation.size()-1 ;i++){
+        x[0] = X[Permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
+        x[1] = X[Permutation[i+1]-1];
+        y[0] = Y[Permutation[i]-1];
+        y[1] = Y[Permutation[i+1]-1];
 
         ui->customPlot->addGraph();
         ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
     }
     //adding first and last route
     x[0] = 0;
-    x[1] = X[0];
+    x[1] = X[Permutation[0]];
     y[0] = 0;
-    y[1] = Y[0];
+    y[1] = Y[Permutation[0]];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
     x[0] = 0;
-    x[1] = X.back();
+    x[1] = X[Permutation.back()-1];
     y[0] = 0;
-    y[1] = Y.back();
+    y[1] = Y[Permutation.back()-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
@@ -272,6 +320,14 @@ void MainWindow::DrawPermutation()
 
 void MainWindow::on_startButton_clicked()
 {
-    ui->lineDistance->setText(QString::number(NN_algorithm()));
+    switch (ui->comboBoxAlg->currentIndex()) {
+    case 0 :
+        ui->lineDistance->setText(QString::number(FLFC_algorithm()));
+        break;
+    case 1 :
+        ui->lineDistance->setText(QString::number(NN_algorithm()));
+        break;
+    }
+
     DrawPermutation();
 }

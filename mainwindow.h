@@ -36,9 +36,11 @@ private:
     QDomDocument xml_file;
 
     QVector<double> X,Y;
+    QVector<int> Permutation;
     //returns  0 if there is no holes
     int ReadHolesPosition(void);
     double NN_algorithm(void);
+    void DrawPermutation(void);
 };
 
 

@@ -20,8 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->customPlot->xAxis->setRange(-10, 100);
     ui->customPlot->yAxis->setRange(-10, 100);
     ui->customPlot->replot();
-    ui->customPlot->setInteraction(QCP::iRangeDrag, true);
-
+    ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
     ui->comboBoxAlg->addItem("NN");
 
 
@@ -64,10 +63,6 @@ void MainWindow::on_loadFileButton_clicked()
         }
         else{
             //drawing
-            for(int i=0;i < X.size(); i++){
-                qDebug()<<QString::number(X[i]) + " " + QString::number(Y[i]);
-            }
-
             // create graph and assign data to it:
             ui->customPlot->addGraph();
             ui->customPlot->graph(0)->setData(X, Y);
@@ -179,6 +174,7 @@ int MainWindow::ReadHolesPosition()
 double MainWindow::NN_algorithm()
 {
     QVector<double> XP,YP;
+    QVector<int> permutation;
     XP = X;
     YP = Y;
     XP.push_front(0);//adding starting point (0,0)
@@ -200,18 +196,82 @@ double MainWindow::NN_algorithm()
         }
     }
 
+    //starting algorithm
+    bool pointUsed = false;
+    double bestDist = 99999999999;
+    int bestPoint,i;
+    bestPoint = -1;
+    permutation.push_back(0);//starting point is always at (0,0)
+    while(permutation.size()!=size){
 
-    qDebug() << QString::number(size);
+
+        for( i = 0; i < size ;i++){
+
+            //can not pointing on the same element
+            for(int j = 0; j <permutation.size();j++){
+                if( i == permutation[j]){
+                    pointUsed = true;
+                }
+            }
+            if(bestDist > distMat[permutation.back()][i] && !pointUsed){
+                bestDist = distMat[permutation.back()][i];
+                bestPoint = i;
+
+            }
+            pointUsed = false;
+
+        }
+        distance += bestDist;
+        bestDist = 99999999999;
+        permutation.push_back(bestPoint);
+
+    }
+        distance += distMat[0][permutation.back()]; // returning route to point starting (0,0)
+
 
     for(int i = 0;i < size ; i++){ //clearing distance matrix
         delete [] distMat[i];
     }
     delete [] distMat;
 
+    Permutation = permutation;
+
     return distance;
+}
+
+void MainWindow::DrawPermutation()
+{
+    QVector<double> x(2),y(2);
+
+    for(int i = 0; i < Permutation.size()-2 ;i++){
+        x[0] = X[i];
+        x[1] = X[i+1];
+        y[0] = Y[i];
+        y[1] = Y[i+1];
+
+        ui->customPlot->addGraph();
+        ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
+    }
+    //adding first and last route
+    x[0] = 0;
+    x[1] = X[0];
+    y[0] = 0;
+    y[1] = Y[0];
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
+
+    x[0] = 0;
+    x[1] = X.back();
+    y[0] = 0;
+    y[1] = Y.back();
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
+
+    ui->customPlot->replot();
 }
 
 void MainWindow::on_startButton_clicked()
 {
-    NN_algorithm();
+    ui->lineDistance->setText(QString::number(NN_algorithm()));
+    DrawPermutation();
 }

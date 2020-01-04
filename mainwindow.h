@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QVector>
 #include <QtMath>
+#include <QFileDialog>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

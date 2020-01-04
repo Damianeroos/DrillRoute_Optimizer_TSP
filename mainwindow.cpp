@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     MainWindow::setWindowTitle("PCB driller path finder");
     ui->statusbar->showMessage("No .brd file has been loaded");
-    ui->boardFileName->setText("../test.brd");
+
 
     // give the axes some labels:
     ui->customPlot->xAxis->setLabel("x");
@@ -19,6 +19,8 @@ MainWindow::MainWindow(QWidget *parent)
     // set axes ranges, so we see all data:
     ui->customPlot->xAxis->setRange(-10, 100);
     ui->customPlot->yAxis->setRange(-10, 100);
+    ui->customPlot->plotLayout()->insertRow(0);
+    ui->customPlot->plotLayout()->addElement(0, 0, new QCPTextElement(ui->customPlot, "Empty plot", QFont("sans", 12, QFont::Bold)));
     ui->customPlot->replot();
     ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
     ui->comboBoxAlg->addItem("FLFC"); //first loaded first choose
@@ -36,7 +38,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_loadFileButton_clicked()
 {
-    file_name = ui->boardFileName->text();
+    file_name = QFileDialog::getOpenFileName(this,"Open .brd file","../","Eagle files(*.brd *.xml *.txt)");
+    ui->customPlot->setWindowTitle(file_name);
+    ui->customPlot->plotLayout()->removeAt(0);
+    ui->customPlot->plotLayout()->addElement(0, 0, new QCPTextElement(ui->customPlot, file_name, QFont("sans", 12, QFont::Bold)));
+
     file.setFileName(file_name);
 
     //cannot open file
@@ -64,6 +70,8 @@ void MainWindow::on_loadFileButton_clicked()
         }
         else{
             //drawing
+            //delete previuos plot
+            ui->customPlot->clearGraphs();
             // create graph and assign data to it:
             ui->customPlot->addGraph();
             ui->customPlot->graph(0)->setData(X, Y);
@@ -87,6 +95,9 @@ int MainWindow::ReadHolesPosition()
 
     QString library_urn,package,rot;
     double x,y,xp,yp,rad,xpp,ypp;
+    //clearing previous points
+    X.clear();
+    Y.clear();
 
     if(elements.isNull())
         return 0;
@@ -289,7 +300,14 @@ void MainWindow::DrawPermutation()
 {
     QVector<double> x(2),y(2);
 
-
+    //clear previous permutation
+    ui->customPlot->clearGraphs();
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(0)->setData(X, Y);
+    ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
+    ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
+    ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+    ui->customPlot->replot();
 
     for(int i = 1; i < Permutation.size()-1 ;i++){
         x[0] = X[Permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1

@@ -32,6 +32,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->progressBar->setRange(0,w_options.repeat);
     ui->progressBar->setValue(0);
     ui->progressBar->setFormat("%v/%m");
+    ui->radioBAnimation->setEnabled(false);
+    ui->startButton->setEnabled(false);
+    ui->comboBoxAlg->setEnabled(false);
+
 
 
 }
@@ -44,6 +48,8 @@ MainWindow::~MainWindow()
         }
         delete [] DistanceMatrix;
     }
+
+
 
     delete ui;
 }
@@ -128,6 +134,8 @@ void MainWindow::on_loadFileButton_clicked()
                     DistanceMatrix[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
                 }
             }
+            ui->startButton->setEnabled(true);
+            ui->comboBoxAlg->setEnabled(true);
         }
     }
 
@@ -326,7 +334,7 @@ double MainWindow::SA_algorithm()
     while(Temperature > w_options.finalTemp){
         nPermutation = sPermutation;
         for(int i = 0; i < w_options.iter ;i++){
-
+              QCoreApplication::processEvents(); //keeping gui responsive
             //generating two random numbers
             a = rand() % nPermutation.size();
             b = rand() % nPermutation.size();
@@ -382,8 +390,15 @@ double MainWindow::opt2_algorithm()
             for(int k = i + 1; k <Permutation.size()-1;k++){
 
                 NewPermutation = opt2_swap(ExistingPermutation,i,k);
+                   QCoreApplication::processEvents(); //keeping gui responsive
 
                new_distance = ComputeDistance(NewPermutation);
+
+               if(ui->radioBAnimation->isChecked()){
+                   DrawPermutation(NewPermutation);
+                   ui->lineDistance->setText(QString::number(best_distance));
+               }
+
                if(new_distance < best_distance){
                    ExistingPermutation=NewPermutation;
                    NoImprovement = false;
@@ -474,6 +489,52 @@ void MainWindow::DrawPermutation()
     ui->customPlot->replot();
 }
 
+void MainWindow::DrawPermutation(QVector<int> permutation)
+{
+    QVector<double> x(2),y(2);
+
+    //clear previous permutation
+    ui->customPlot->clearGraphs();
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(0)->setData(X, Y);
+    ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
+    ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
+    ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+
+
+    //no permutation
+    if(permutation.size()==0)
+        return;
+
+    for(int i = 0; i < permutation.size()-1 ;i++){
+        x[0] = X[permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
+        x[1] = X[permutation[i+1]-1];
+        y[0] = Y[permutation[i]-1];
+        y[1] = Y[permutation[i+1]-1];
+
+        ui->customPlot->addGraph();
+        ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
+    }
+    //adding first and last route
+    x[0] = 0;
+    x[1] = X[permutation[0]-1];
+    y[0] = 0;
+    y[1] = Y[permutation[0]-1];
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
+
+    x[0] = 0;
+    x[1] = X[permutation.back()-1];
+    y[0] = 0;
+    y[1] = Y[permutation.back()-1];
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
+
+
+    //ui->customPlot->rescaleAxes();
+    ui->customPlot->replot();
+}
+
 double MainWindow::ComputeDistance()
 {
 
@@ -511,6 +572,12 @@ double MainWindow::ComputeDistance(QVector<int> permutation)
 
 void MainWindow::on_startButton_clicked()
 {
+    ui->loadFileButton->setEnabled(false);
+    ui->startButton->setEnabled(false);
+    ui->comboBoxAlg->setEnabled(false);
+    w_options.setEnabled(false);
+    ui->statusbar->setStyleSheet("color: green");
+    ui->statusbar->showMessage("busy...");
 
     switch (ui->comboBoxAlg->currentIndex()) {
     case 0 :
@@ -538,6 +605,12 @@ void MainWindow::on_startButton_clicked()
         break;
     }
 
+    ui->loadFileButton->setEnabled(true);
+    ui->startButton->setEnabled(true);
+    ui->comboBoxAlg->setEnabled(true);
+    w_options.setEnabled(true);
+    ui->statusbar->showMessage("complete");
+
 }
 
 void MainWindow::on_optionButton_clicked()
@@ -556,85 +629,12 @@ void MainWindow::on_comboBoxAlg_currentIndexChanged(int index)
         ui->optionButton->setEnabled(false);
         ui->progressBar->setVisible(false);
     }
+
+    if(index == 3){
+        ui->radioBAnimation->setEnabled(true);
+    }
+    else{
+        ui->radioBAnimation->setEnabled(false);
+    }
 }
 
-//double MainWindow::NN_algorithm()
-//{
-//    QVector<double> XP,YP;
-//    QVector<int> permutation;
-//    XP = X;
-//    YP = Y;
-//    XP.push_front(0);//adding starting point (0,0)
-//    YP.push_front(0);
-
-//    int size = XP.size();
-//    double distance = 0;
-
-//    double ** distMat = new double* [size]; //creating distance matrix
-
-//    for(int i = 0;i < size ; i++){
-//        distMat[i] = new double [size];
-//    }
-
-//    //computing distance matrix
-//    for(int i=0;i<size;i++){
-//        for(int j=0;j<size;j++){
-//            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
-//        }
-//    }
-
-//    //starting algorithm
-//    bool pointUsed = false;
-//    double bestDist = 99999999999;
-//    int bestPoint,i;
-//    bestPoint = -1;
-//    // permutation.push_back(0);//starting point is always at (0,0)
-
-//    //first nearest hole
-//    for(int i = 1 ; i < size ; i++){
-//        if(bestDist > distMat[0][i] ){
-//            bestPoint=i;
-//            bestDist = distMat[0][i];
-//        }
-//    }
-//    permutation.push_back(bestPoint);
-
-//    distance += bestDist;
-//    bestDist = 9999999999999;
-
-//    while(permutation.size()!=size){
-
-
-//        for( i = 1; i < size ;i++){
-
-//            //can not pointing on the same element
-//            for(int j = 0; j <permutation.size();j++){
-//                if( i == permutation[j]){
-//                    pointUsed = true;
-//                }
-//            }
-//            if(bestDist > distMat[permutation.back()][i] && !pointUsed){
-//                bestDist = distMat[permutation.back()][i];
-//                bestPoint = i;
-
-//            }
-//            pointUsed = false;
-
-//        }
-//        distance += bestDist;
-//        bestDist = 99999999999;
-//        permutation.push_back(bestPoint);
-
-//    }
-//    distance += distMat[0][permutation.back()]; // returning route to point starting (0,0)
-
-
-//    for(int i = 0;i < size ; i++){ //clearing distance matrix
-//        delete [] distMat[i];
-//    }
-//    delete [] distMat;
-
-//    Permutation = permutation;
-
-//    return ComputeDistance();
-//}

@@ -6,12 +6,12 @@ SA_options::SA_options(QWidget *parent) :
     ui(new Ui::SA_options)
 {
     ui->setupUi(this);
-
+    this->setWindowTitle("Simulated annealing opions");
     iter = 10;
-    initTemp = 50;
+    initTemp = 100;
     finalTemp = 1;
     alpha = 0.99; //0.85 - 0.98
-    repeat = 10;
+    repeat = 20;
 
     ui->alphaBox->setValue(alpha);
     ui->alphaBox->setRange(0.85,0.99);
@@ -21,8 +21,8 @@ SA_options::SA_options(QWidget *parent) :
     ui->finalTempBox->setRange(0.5,9999);
     ui->itBox->setValue(iter);
     ui->itBox->setRange(1,1000);
-    ui->rpBox->setRange(1,100);
-    ui->rpBox->setValue(repeat);
+    ui->rpBox->setRange(1,1000);
+    ui->rpBox->setValue(20);
 }
 
 SA_options::~SA_options()

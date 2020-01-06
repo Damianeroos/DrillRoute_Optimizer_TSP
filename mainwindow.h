@@ -38,6 +38,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    SA_options w_options;
+
     QString file_name;
     QFile file;
     QDomDocument xml_file;
@@ -53,10 +55,11 @@ private:
     double opt2_algorithm(void);
     QVector<int> opt2_swap(QVector<int> permutation,int a,int b);
     void DrawPermutation(void);
+    void DrawPermutation(QVector<int> permutation);
     double ComputeDistance(void);
     double ComputeDistance(QVector<int> permutation);
 
-    SA_options w_options;
+
 };
 
 

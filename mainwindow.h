@@ -8,6 +8,8 @@
 #include <QVector>
 #include <QtMath>
 #include <QFileDialog>
+#include <sa_options.h>
+#include <QRandomGenerator>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,6 +32,10 @@ private slots:
 
     void on_startButton_clicked();
 
+    void on_optionButton_clicked();
+
+    void on_comboBoxAlg_currentIndexChanged(int index);
+
 private:
     Ui::MainWindow *ui;
     QString file_name;
@@ -45,6 +51,9 @@ private:
     double SA_algorithm(void);
     void DrawPermutation(void);
     double ComputeDistance(void);
+    double ComputeDistance(QVector<int> permutation);
+
+    SA_options w_options;
 };
 
 

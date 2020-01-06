@@ -18,14 +18,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    sa_options.cpp
 
 HEADERS += \
     mainwindow.h \
-    qcustomplot.h
+    qcustomplot.h \
+    sa_options.h
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    sa_options.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

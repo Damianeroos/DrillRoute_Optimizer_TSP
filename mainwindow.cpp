@@ -26,12 +26,18 @@ MainWindow::MainWindow(QWidget *parent)
     ui->comboBoxAlg->addItem("NP"); //natural permutation
     ui->comboBoxAlg->addItem("NN"); //nearest neighbour
     ui->comboBoxAlg->addItem("SA"); //simulated annealing
+    ui->optionButton->setEnabled(false);
+    ui->progressBar->setVisible(false);
+    ui->progressBar->setRange(0,w_options.repeat);
+    ui->progressBar->setValue(0);
+    ui->progressBar->setFormat("%v/%m");
 
 
 }
 
 MainWindow::~MainWindow()
 {
+
     delete ui;
 }
 
@@ -39,6 +45,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_loadFileButton_clicked()
 {
+    //clearing previuos data
+    X.clear();
+    Y.clear();
+    Permutation.clear();
+
     file_name = QFileDialog::getOpenFileName(this,"Open .brd file","../","Eagle files(*.brd *.xml *.txt)");
     ui->customPlot->setWindowTitle(file_name);
     ui->customPlot->plotLayout()->removeAt(0);
@@ -312,9 +323,54 @@ double MainWindow::NP_algorithm()
 
 double MainWindow::SA_algorithm()
 {
-    double distance = 0;
 
-    return distance;
+    double Temperature = w_options.initTemp;
+    QRandomGenerator generator;
+    int a,b,temp;
+    double diff;
+    QVector<int> sPermutation,bPermutation,nPermutation;
+    if(Permutation.empty()){
+        NN_algorithm(); //base permutation
+    }
+    sPermutation=bPermutation=nPermutation=Permutation;
+
+   while(Temperature > w_options.finalTemp){
+       nPermutation = sPermutation;
+       for(int i = 0; i < w_options.iter ;i++){
+
+        //generating two random numbers
+        a = rand() % nPermutation.size();
+        b = rand() % nPermutation.size();
+        while(a==b){
+            b = rand() % nPermutation.size(); // a and b shouldnt be the same
+        }
+       // qDebug()<<QString::number(a) + " " + QString::number(b);
+        //making similar but different solution
+        temp = nPermutation[a];
+        nPermutation[a]=nPermutation[b];
+        nPermutation[b] = temp;
+
+        if(ComputeDistance(nPermutation)<ComputeDistance(bPermutation)){
+            bPermutation = nPermutation;
+        }
+        diff = ComputeDistance(nPermutation) - ComputeDistance(sPermutation);
+        if(diff < 0){
+            sPermutation = nPermutation;
+        }
+        else{
+
+            if(rand() < qExp((-diff)/Temperature)){
+                sPermutation = nPermutation;
+            }
+        }
+       }
+        Temperature *= w_options.alpha;
+        // qDebug()<<QString::number(Temperature);
+    }
+    Permutation = bPermutation;
+
+
+    return ComputeDistance();
 }
 
 void MainWindow::DrawPermutation()
@@ -401,19 +457,87 @@ double MainWindow::ComputeDistance()
     return distance;
 }
 
+double MainWindow::ComputeDistance(QVector<int> permutation)
+{
+    QVector<double> XP,YP;
+    XP = X;
+    YP = Y;
+    XP.push_front(0);//adding starting point (0,0)
+    YP.push_front(0);
+
+    int size = XP.size();
+    double distance = 0;
+
+    double ** distMat = new double* [size]; //creating distance matrix
+
+    for(int i = 0;i < size ; i++){
+        distMat[i] = new double [size];
+    }
+
+    //computing distance matrix
+    for(int i=0;i<size;i++){
+        for(int j=0;j<size;j++){
+            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
+        }
+    }
+
+    for(int i=0;i<permutation.size()-1;i++){
+        distance += distMat[permutation[i]][permutation[i+1]];
+    }
+
+    distance+=distMat[size-1][0];
+
+    for(int i = 0;i < size ; i++){ //clearing distance matrix
+        delete [] distMat[i];
+    }
+    delete [] distMat;
+
+    return distance;
+}
+
 void MainWindow::on_startButton_clicked()
 {
+
     switch (ui->comboBoxAlg->currentIndex()) {
     case 0 :
         ui->lineDistance->setText(QString::number(NP_algorithm()));
+        DrawPermutation();
         break;
     case 1 :
         ui->lineDistance->setText(QString::number(NN_algorithm()));
+        DrawPermutation();
         break;
-    case 3 :
+    case 2 :
+        ui->progressBar->setRange(0,w_options.repeat);
+
+        for(int i = 0 ; i < w_options.repeat;i++){
+            ui->progressBar->setFormat("%v/%m");
+            ui->progressBar->setValue(i+1);
         ui->lineDistance->setText(QString::number(SA_algorithm()));
+        DrawPermutation();
+        }
+        ui->progressBar->setFormat("Complete!!!");
         break;
     }
 
-    DrawPermutation();
+
+
+}
+
+void MainWindow::on_optionButton_clicked()
+{
+    w_options.show();
+}
+
+void MainWindow::on_comboBoxAlg_currentIndexChanged(int index)
+{
+    if(index == 2){
+        ui->optionButton->setEnabled(true);
+        ui->progressBar->setVisible(true);
+        ui->progressBar->setFormat("%v/%m");
+    }
+    else{
+        ui->optionButton->setEnabled(false);
+        ui->progressBar->setVisible(false);
+    }
 }

@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->radioBAnimation->setEnabled(false);
     ui->startButton->setEnabled(false);
     ui->comboBoxAlg->setEnabled(false);
-
+    ui->saveButton->setEnabled(false);
 
 
 }
@@ -58,8 +58,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_loadFileButton_clicked()
 {
-    QVector<double> tempX,tempY;
+    QVector<double> tempX,tempY,point0;
     int size;
+    point0.push_back(0);
     //clearing previuos data
     if(!X.isEmpty()){
         for(int i=0;i<=X.size();i++){
@@ -112,6 +113,12 @@ void MainWindow::on_loadFileButton_clicked()
             ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
             ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
             ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+
+            ui->customPlot->addGraph();
+            ui->customPlot->graph(1)->setData(point0,point0);
+            ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
+            ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
+            ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
             ui->customPlot->replot();
 
@@ -445,7 +452,8 @@ QVector<int> MainWindow::opt2_swap(QVector<int> permutation, int a, int b)
 
 void MainWindow::DrawPermutation()
 {
-    QVector<double> x(2),y(2);
+    QVector<double> x(2),y(2),point0;
+    point0.push_back(0);
 
     //clear previous permutation
     ui->customPlot->clearGraphs();
@@ -454,7 +462,11 @@ void MainWindow::DrawPermutation()
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
-
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(1)->setData(point0,point0);
+    ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
+    ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
+    ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
     //no permutation
     if(Permutation.size()==0)
@@ -491,7 +503,8 @@ void MainWindow::DrawPermutation()
 
 void MainWindow::DrawPermutation(QVector<int> permutation)
 {
-    QVector<double> x(2),y(2);
+    QVector<double> x(2),y(2),point0;
+    point0.push_back(0);
 
     //clear previous permutation
     ui->customPlot->clearGraphs();
@@ -500,7 +513,11 @@ void MainWindow::DrawPermutation(QVector<int> permutation)
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
-
+    ui->customPlot->addGraph();
+    ui->customPlot->graph(1)->setData(point0,point0);
+    ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
+    ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
+    ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
     //no permutation
     if(permutation.size()==0)
@@ -575,6 +592,7 @@ void MainWindow::on_startButton_clicked()
     ui->loadFileButton->setEnabled(false);
     ui->startButton->setEnabled(false);
     ui->comboBoxAlg->setEnabled(false);
+    ui->saveButton->setEnabled(false);
     w_options.setEnabled(false);
     ui->statusbar->setStyleSheet("color: green");
     ui->statusbar->showMessage("busy...");
@@ -610,6 +628,8 @@ void MainWindow::on_startButton_clicked()
     ui->comboBoxAlg->setEnabled(true);
     w_options.setEnabled(true);
     ui->statusbar->showMessage("complete");
+    ui->saveButton->setEnabled(true);
+
 
 }
 
@@ -638,3 +658,26 @@ void MainWindow::on_comboBoxAlg_currentIndexChanged(int index)
     }
 }
 
+
+void MainWindow::on_saveButton_clicked()
+{
+    QString filename="out_";
+    filename += ui->lineDistance->text();
+    QFile file( filename );
+    if ( file.open(QIODevice::WriteOnly) )
+    {
+        QTextStream stream( &file );
+        for(int i = 0 ; i <  X.size(); i++){
+            stream << QString::number(X[Permutation[i]-1]) + " " +  QString::number(Y[Permutation[i]-1]) << endl;
+        }
+        ui->statusbar->setStyleSheet("color: blue");
+        ui->statusbar->showMessage("Results saved in " + filename + " file",5000);
+        file.close();
+    }
+    else{
+        ui->statusbar->setStyleSheet("color: red");
+        ui->statusbar->showMessage("Unable to saved file.",5000);
+    }
+
+
+}

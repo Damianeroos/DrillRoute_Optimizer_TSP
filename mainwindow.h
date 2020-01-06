@@ -36,6 +36,8 @@ private slots:
 
     void on_comboBoxAlg_currentIndexChanged(int index);
 
+    void on_saveButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     SA_options w_options;

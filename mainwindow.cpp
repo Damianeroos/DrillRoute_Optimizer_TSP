@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->comboBoxAlg->addItem("NP"); //natural permutation
     ui->comboBoxAlg->addItem("NN"); //nearest neighbour
     ui->comboBoxAlg->addItem("SA"); //simulated annealing
+    ui->comboBoxAlg->addItem("2-opt");//2-opt algrithm
     ui->optionButton->setEnabled(false);
     ui->progressBar->setVisible(false);
     ui->progressBar->setRange(0,w_options.repeat);
@@ -37,6 +38,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    if(!X.isEmpty()){
+        for(int i=0;i<=X.size();i++){
+            delete [] DistanceMatrix[i];
+        }
+        delete [] DistanceMatrix;
+    }
 
     delete ui;
 }
@@ -45,7 +52,16 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_loadFileButton_clicked()
 {
+    QVector<double> tempX,tempY;
+    int size;
     //clearing previuos data
+    if(!X.isEmpty()){
+        for(int i=0;i<=X.size();i++){
+            delete [] DistanceMatrix[i];
+        }
+        delete [] DistanceMatrix;
+    }
+
     X.clear();
     Y.clear();
     Permutation.clear();
@@ -92,8 +108,30 @@ void MainWindow::on_loadFileButton_clicked()
             ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
 
             ui->customPlot->replot();
+
+            //making distance matrix
+            tempX = X;
+            tempY = Y;
+            tempX.push_front(0); //add starting point (0,0)
+            tempY.push_front(0);
+            size = tempX.size();
+
+            DistanceMatrix = new double* [size]; //creating distance matrix
+
+            for(int i = 0;i < size ; i++){
+                DistanceMatrix[i] = new double [size];
+            }
+
+            //computing distance matrix
+            for(int i=0;i<size;i++){
+                for(int j=0;j<size;j++){
+                    DistanceMatrix[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
+                }
+            }
         }
     }
+
+
 
 
 }
@@ -197,41 +235,26 @@ int MainWindow::ReadHolesPosition()
 
 double MainWindow::NN_algorithm()
 {
-    QVector<double> XP,YP;
-    QVector<int> permutation;
-    XP = X;
-    YP = Y;
-    XP.push_front(0);//adding starting point (0,0)
-    YP.push_front(0);
 
-    int size = XP.size();
+    QVector<int> permutation;
+
+
     double distance = 0;
 
-    double ** distMat = new double* [size]; //creating distance matrix
 
-    for(int i = 0;i < size ; i++){
-        distMat[i] = new double [size];
-    }
-
-    //computing distance matrix
-    for(int i=0;i<size;i++){
-        for(int j=0;j<size;j++){
-            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
-        }
-    }
 
     //starting algorithm
     bool pointUsed = false;
     double bestDist = 99999999999;
     int bestPoint,i;
     bestPoint = -1;
-   // permutation.push_back(0);//starting point is always at (0,0)
+    // permutation.push_back(0);//starting point is always at (0,0)
 
     //first nearest hole
-    for(int i = 1 ; i < size ; i++){
-        if(bestDist > distMat[0][i] ){
+    for(int i = 1 ; i <= X.size() ; i++){
+        if(bestDist > DistanceMatrix[0][i] ){
             bestPoint=i;
-            bestDist = distMat[0][i];
+            bestDist = DistanceMatrix[0][i];
         }
     }
     permutation.push_back(bestPoint);
@@ -239,10 +262,10 @@ double MainWindow::NN_algorithm()
     distance += bestDist;
     bestDist = 9999999999999;
 
-    while(permutation.size()!=size){
+    while(permutation.size()!=X.size()+1){
 
 
-        for( i = 1; i < size ;i++){
+        for( i = 1; i <= X.size() ;i++){
 
             //can not pointing on the same element
             for(int j = 0; j <permutation.size();j++){
@@ -250,8 +273,8 @@ double MainWindow::NN_algorithm()
                     pointUsed = true;
                 }
             }
-            if(bestDist > distMat[permutation.back()][i] && !pointUsed){
-                bestDist = distMat[permutation.back()][i];
+            if(bestDist > DistanceMatrix[permutation.back()][i] && !pointUsed){
+                bestDist = DistanceMatrix[permutation.back()][i];
                 bestPoint = i;
 
             }
@@ -263,13 +286,8 @@ double MainWindow::NN_algorithm()
         permutation.push_back(bestPoint);
 
     }
-        distance += distMat[0][permutation.back()]; // returning route to point starting (0,0)
+    distance += DistanceMatrix[0][permutation.back()]; // returning route to point starting (0,0)
 
-
-    for(int i = 0;i < size ; i++){ //clearing distance matrix
-        delete [] distMat[i];
-    }
-    delete [] distMat;
 
     Permutation = permutation;
 
@@ -278,42 +296,13 @@ double MainWindow::NN_algorithm()
 
 double MainWindow::NP_algorithm()
 {
-    QVector<double> XP,YP;
     QVector<int> permutation;
-    XP = X;
-    YP = Y;
-    XP.push_front(0);//adding starting point (0,0)
-    YP.push_front(0);
-
-    int size = XP.size();
-    double distance = 0;
-
-    double ** distMat = new double* [size]; //creating distance matrix
-
-    for(int i = 0;i < size ; i++){
-        distMat[i] = new double [size];
-    }
-
-    //computing distance matrix
-    for(int i=0;i<size;i++){
-        for(int j=0;j<size;j++){
-            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
-        }
-    }
 
     //starting algorithm
-    for(int i=1;i<size;i++){
+    for(int i=1;i<=X.size();i++){
         permutation.push_back(i);
-        if(i<size-1){
-            distance += distMat[i][i+1];
-        }
     }
-    distance+=distMat[size-1][0];
 
-    for(int i = 0;i < size ; i++){ //clearing distance matrix
-        delete [] distMat[i];
-    }
-    delete [] distMat;
 
     Permutation = permutation;
 
@@ -334,36 +323,36 @@ double MainWindow::SA_algorithm()
     }
     sPermutation=bPermutation=nPermutation=Permutation;
 
-   while(Temperature > w_options.finalTemp){
-       nPermutation = sPermutation;
-       for(int i = 0; i < w_options.iter ;i++){
+    while(Temperature > w_options.finalTemp){
+        nPermutation = sPermutation;
+        for(int i = 0; i < w_options.iter ;i++){
 
-        //generating two random numbers
-        a = rand() % nPermutation.size();
-        b = rand() % nPermutation.size();
-        while(a==b){
-            b = rand() % nPermutation.size(); // a and b shouldnt be the same
-        }
-       // qDebug()<<QString::number(a) + " " + QString::number(b);
-        //making similar but different solution
-        temp = nPermutation[a];
-        nPermutation[a]=nPermutation[b];
-        nPermutation[b] = temp;
+            //generating two random numbers
+            a = rand() % nPermutation.size();
+            b = rand() % nPermutation.size();
+            while(a==b){
+                b = rand() % nPermutation.size(); // a and b shouldnt be the same
+            }
+            // qDebug()<<QString::number(a) + " " + QString::number(b);
+            //making similar but different solution
+            temp = nPermutation[a];
+            nPermutation[a]=nPermutation[b];
+            nPermutation[b] = temp;
 
-        if(ComputeDistance(nPermutation)<ComputeDistance(bPermutation)){
-            bPermutation = nPermutation;
-        }
-        diff = ComputeDistance(nPermutation) - ComputeDistance(sPermutation);
-        if(diff < 0){
-            sPermutation = nPermutation;
-        }
-        else{
-
-            if(rand() < qExp((-diff)/Temperature)){
+            if(ComputeDistance(nPermutation)<ComputeDistance(bPermutation)){
+                bPermutation = nPermutation;
+            }
+            diff = ComputeDistance(nPermutation) - ComputeDistance(sPermutation);
+            if(diff < 0){
                 sPermutation = nPermutation;
             }
+            else{
+
+                if(rand() < qExp((-diff)/Temperature)){
+                    sPermutation = nPermutation;
+                }
+            }
         }
-       }
         Temperature *= w_options.alpha;
         // qDebug()<<QString::number(Temperature);
     }
@@ -371,6 +360,72 @@ double MainWindow::SA_algorithm()
 
 
     return ComputeDistance();
+}
+
+double MainWindow::opt2_algorithm()
+{
+    bool NoImprovement = false;
+    double best_distance,new_distance;
+    QVector<int> NewPermutation,ExistingPermutation;
+
+
+    if(Permutation.empty()){
+        NN_algorithm();
+    }
+
+    ExistingPermutation = Permutation;
+
+    while(!NoImprovement){
+        NoImprovement = true;
+        best_distance = ComputeDistance(ExistingPermutation);
+        for(int i=0; i<Permutation.size();i++){
+            for(int k = i + 1; k <Permutation.size()-1;k++){
+
+                NewPermutation = opt2_swap(ExistingPermutation,i,k);
+
+               new_distance = ComputeDistance(NewPermutation);
+               if(new_distance < best_distance){
+                   ExistingPermutation=NewPermutation;
+                   NoImprovement = false;
+               }
+               if(!NoImprovement)
+                   break;
+            }
+            if(!NoImprovement)
+                break;
+        }
+    }
+
+    Permutation = ExistingPermutation;
+    return ComputeDistance();
+}
+
+QVector<int> MainWindow::opt2_swap(QVector<int> permutation, int a, int b)
+{
+    int temp;
+    QVector<int> NewPermutation;
+
+    if(a > b){
+        temp = a;
+        a = b;
+        b = temp;
+    }
+
+    for(int i=0;i<a;i++){
+        NewPermutation.push_back(permutation[i]);
+    }
+
+    if(b < permutation.size()){
+    for(int i = b ; i >= a ; i--){
+        NewPermutation.push_back(permutation[i]);
+    }
+}
+    for(int i = b+1; i < permutation.size();i++){
+
+        NewPermutation.push_back(permutation[i]);
+    }
+
+    return NewPermutation;
 }
 
 void MainWindow::DrawPermutation()
@@ -421,76 +476,35 @@ void MainWindow::DrawPermutation()
 
 double MainWindow::ComputeDistance()
 {
-    QVector<double> XP,YP;
-    XP = X;
-    YP = Y;
-    XP.push_front(0);//adding starting point (0,0)
-    YP.push_front(0);
 
-    int size = XP.size();
     double distance = 0;
 
-    double ** distMat = new double* [size]; //creating distance matrix
 
-    for(int i = 0;i < size ; i++){
-        distMat[i] = new double [size];
-    }
-
-    //computing distance matrix
-    for(int i=0;i<size;i++){
-        for(int j=0;j<size;j++){
-            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
-        }
-    }
 
     for(int i=0;i<Permutation.size()-1;i++){
-        distance += distMat[Permutation[i]][Permutation[i+1]];
+        distance += DistanceMatrix[Permutation[i]][Permutation[i+1]];
     }
 
-    distance+=distMat[size-1][0];
+    distance+=DistanceMatrix[X.size()][0];
 
-    for(int i = 0;i < size ; i++){ //clearing distance matrix
-        delete [] distMat[i];
-    }
-    delete [] distMat;
+
 
     return distance;
 }
 
 double MainWindow::ComputeDistance(QVector<int> permutation)
 {
-    QVector<double> XP,YP;
-    XP = X;
-    YP = Y;
-    XP.push_front(0);//adding starting point (0,0)
-    YP.push_front(0);
 
-    int size = XP.size();
     double distance = 0;
 
-    double ** distMat = new double* [size]; //creating distance matrix
 
-    for(int i = 0;i < size ; i++){
-        distMat[i] = new double [size];
-    }
-
-    //computing distance matrix
-    for(int i=0;i<size;i++){
-        for(int j=0;j<size;j++){
-            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
-        }
-    }
 
     for(int i=0;i<permutation.size()-1;i++){
-        distance += distMat[permutation[i]][permutation[i+1]];
+        distance += DistanceMatrix[permutation[i]][permutation[i+1]];
     }
 
-    distance+=distMat[size-1][0];
+    distance+=DistanceMatrix[X.size()][0];
 
-    for(int i = 0;i < size ; i++){ //clearing distance matrix
-        delete [] distMat[i];
-    }
-    delete [] distMat;
 
     return distance;
 }
@@ -513,14 +527,16 @@ void MainWindow::on_startButton_clicked()
         for(int i = 0 ; i < w_options.repeat;i++){
             ui->progressBar->setFormat("%v/%m");
             ui->progressBar->setValue(i+1);
-        ui->lineDistance->setText(QString::number(SA_algorithm()));
-        DrawPermutation();
+            ui->lineDistance->setText(QString::number(SA_algorithm()));
+            DrawPermutation();
         }
         ui->progressBar->setFormat("Complete!!!");
         break;
+    case 3 :
+        ui->lineDistance->setText(QString::number(opt2_algorithm()));
+        DrawPermutation();
+        break;
     }
-
-
 
 }
 
@@ -541,3 +557,84 @@ void MainWindow::on_comboBoxAlg_currentIndexChanged(int index)
         ui->progressBar->setVisible(false);
     }
 }
+
+//double MainWindow::NN_algorithm()
+//{
+//    QVector<double> XP,YP;
+//    QVector<int> permutation;
+//    XP = X;
+//    YP = Y;
+//    XP.push_front(0);//adding starting point (0,0)
+//    YP.push_front(0);
+
+//    int size = XP.size();
+//    double distance = 0;
+
+//    double ** distMat = new double* [size]; //creating distance matrix
+
+//    for(int i = 0;i < size ; i++){
+//        distMat[i] = new double [size];
+//    }
+
+//    //computing distance matrix
+//    for(int i=0;i<size;i++){
+//        for(int j=0;j<size;j++){
+//            distMat[i][j]=qSqrt(qPow(XP[i]-XP[j],2)+qPow(YP[i]-YP[j],2));
+//        }
+//    }
+
+//    //starting algorithm
+//    bool pointUsed = false;
+//    double bestDist = 99999999999;
+//    int bestPoint,i;
+//    bestPoint = -1;
+//    // permutation.push_back(0);//starting point is always at (0,0)
+
+//    //first nearest hole
+//    for(int i = 1 ; i < size ; i++){
+//        if(bestDist > distMat[0][i] ){
+//            bestPoint=i;
+//            bestDist = distMat[0][i];
+//        }
+//    }
+//    permutation.push_back(bestPoint);
+
+//    distance += bestDist;
+//    bestDist = 9999999999999;
+
+//    while(permutation.size()!=size){
+
+
+//        for( i = 1; i < size ;i++){
+
+//            //can not pointing on the same element
+//            for(int j = 0; j <permutation.size();j++){
+//                if( i == permutation[j]){
+//                    pointUsed = true;
+//                }
+//            }
+//            if(bestDist > distMat[permutation.back()][i] && !pointUsed){
+//                bestDist = distMat[permutation.back()][i];
+//                bestPoint = i;
+
+//            }
+//            pointUsed = false;
+
+//        }
+//        distance += bestDist;
+//        bestDist = 99999999999;
+//        permutation.push_back(bestPoint);
+
+//    }
+//    distance += distMat[0][permutation.back()]; // returning route to point starting (0,0)
+
+
+//    for(int i = 0;i < size ; i++){ //clearing distance matrix
+//        delete [] distMat[i];
+//    }
+//    delete [] distMat;
+
+//    Permutation = permutation;
+
+//    return ComputeDistance();
+//}

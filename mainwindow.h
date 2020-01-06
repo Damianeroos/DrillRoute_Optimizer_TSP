@@ -41,6 +41,7 @@ private:
     QString file_name;
     QFile file;
     QDomDocument xml_file;
+    double **DistanceMatrix;
 
     QVector<double> X,Y;
     QVector<int> Permutation;
@@ -49,6 +50,8 @@ private:
     double NN_algorithm(void);
     double NP_algorithm(void);
     double SA_algorithm(void);
+    double opt2_algorithm(void);
+    QVector<int> opt2_swap(QVector<int> permutation,int a,int b);
     void DrawPermutation(void);
     double ComputeDistance(void);
     double ComputeDistance(QVector<int> permutation);

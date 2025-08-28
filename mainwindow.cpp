@@ -196,8 +196,8 @@ void MainWindow::on_saveBtn_clicked()
     if ( file.open(QIODevice::WriteOnly) )
     {
         QTextStream stream( &file );
-        for(int i = 0 ; i <  X.size(); i++){
-            stream << QString::number(X[Permutation[i]-1]) + " " +  QString::number(Y[Permutation[i]-1]) << Qt::endl;
+        for(int i = 0 ; i <  tsp_.pointX().size(); i++){
+            stream << QString::number(tsp_.pointX()[tsp_.permutation()[i]-1]) + " " +  QString::number(tsp_.pointY()[tsp_.permutation()[i]-1]) << Qt::endl;
         }
         ui->statusbar->setStyleSheet("color: blue");
         ui->statusbar->showMessage("Results saved in " + filename + " file",5000);
@@ -387,10 +387,10 @@ double MainWindow::SA_algorithm()
     int a,b,temp;
     double diff;
     QVector<int> sPermutation,bPermutation,nPermutation;
-    if(Permutation.empty()){
+    if(tsp_.permutation().empty()){
         NN_algorithm(); //base permutation
     }
-    sPermutation=bPermutation=nPermutation=Permutation;
+    sPermutation=bPermutation=nPermutation=tsp_.permutation();
 
     while(Temperature > w_options.finalTemp){
         nPermutation = sPermutation;
@@ -425,7 +425,7 @@ double MainWindow::SA_algorithm()
         Temperature *= w_options.alpha;
         // qDebug()<<QString::number(Temperature);
     }
-    Permutation = bPermutation;
+    tsp_.permutation() = bPermutation;
 
 
     return ComputeDistance();
@@ -437,18 +437,19 @@ double MainWindow::opt2_algorithm()
     double best_distance,new_distance;
     QVector<int> NewPermutation,ExistingPermutation;
 
+    QVector<int>& permutation = tsp_.permutation();
 
-    if(Permutation.empty()){
+    if(permutation.empty()){
         NN_algorithm();
     }
 
-    ExistingPermutation = Permutation;
+    ExistingPermutation = permutation;
 
     while(!NoImprovement){
         NoImprovement = true;
         best_distance = ComputeDistance(ExistingPermutation);
-        for(int i=0; i<Permutation.size();i++){
-            for(int k = i + 1; k <Permutation.size()-1;k++){
+        for(int i=0; i<permutation.size();i++){
+            for(int k = i + 1; k <permutation.size()-1;k++){
 
                 NewPermutation = opt2_swap(ExistingPermutation,i,k);
                 QCoreApplication::processEvents(); //keeping gui responsive
@@ -472,7 +473,7 @@ double MainWindow::opt2_algorithm()
         }
     }
 
-    Permutation = ExistingPermutation;
+    permutation = ExistingPermutation;
     return ComputeDistance();
 }
 

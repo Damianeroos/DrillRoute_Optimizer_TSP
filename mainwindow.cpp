@@ -107,7 +107,7 @@ void MainWindow::on_loadBtn_clicked()
         QString(),
         tr("Eagle files(*.brd)"));
 
-    if(filePath.size()){
+    if(!filePath.size()){
         ui->statusbar->setStyleSheet("color: red");
         ui->statusbar->showMessage("Can not open " + filePath,5000);
         return;
@@ -137,11 +137,6 @@ void MainWindow::on_loadBtn_clicked()
         ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
         ui->customPlot->replot();
-
-        //pawian czy tego potrzebujemy
-        // 5. ustawienie początkowej permutacji
-        //currentPerm_.resize(problem_.pointsCount());
-        //std::iota(currentPerm_.begin(), currentPerm_.end(), 0);
 
         ui->startBtn->setEnabled(true);
         ui->algorithmBox->setEnabled(true);

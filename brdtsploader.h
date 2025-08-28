@@ -2,6 +2,8 @@
 
 #include "tsp_problem.h"
 
+#include <QDomDocument>
+
 class ITspLoader {
 public:
     virtual ~ITspLoader() = default;
@@ -12,5 +14,8 @@ class brdTspLoader : public ITspLoader
 {
 public:
     TspProblem load(const QString& filePath) override;
+
+private:
+    QVector<QPointF> readHoles(const QDomDocument& doc);
 };
 

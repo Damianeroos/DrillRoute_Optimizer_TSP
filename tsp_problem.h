@@ -22,6 +22,12 @@ public:
     QVector<QVector<double> >& dist();
     QVector<int>& permutation();
 
+    void setPointX(const QVector<double> &newPointX);
+
+    void setPointY(const QVector<double> &newPointY);
+
+    void buildDistanceMatrix();
+
 private:
     QVector<int> permutation_;
     QVector<QVector<double>> dist_;

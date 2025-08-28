@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
         sa_options.h
         tsp_problem.cpp
         tsp_problem.h
+        brdtsploader.cpp
+        brdtsploader.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

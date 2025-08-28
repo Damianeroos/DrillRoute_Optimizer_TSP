@@ -2,6 +2,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "qcustomplot.h"
+#include "brdtsploader.h"
+
+#include <memory>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -9,6 +12,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    loader_ = std::make_unique<brdTspLoader>();
 
     MainWindow::setWindowTitle("PCB driller path finder");
     ui->statusbar->showMessage("No .brd file has been loaded");
@@ -96,83 +101,54 @@ void MainWindow::on_startBtn_clicked()
 
 void MainWindow::on_loadBtn_clicked()
 {
-    QVector<double> tempX,tempY,point0;
-    int size;
-    point0.push_back(0);
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("Open .brd file"),
+        QString(),
+        tr("Eagle files(*.brd)"));
 
-    tsp_.clear();
-
-    file_name = QFileDialog::getOpenFileName(this,"Open .brd file","../","Eagle files(*.brd *.xml *.txt)");
-    ui->customPlot->setWindowTitle(file_name);
-    ui->customPlot->plotLayout()->removeAt(0);
-    ui->customPlot->plotLayout()->addElement(0, 0, new QCPTextElement(ui->customPlot, file_name, QFont("sans", 12, QFont::Bold)));
-
-    file.setFileName(file_name);
-
-    //cannot open file
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+    if(filePath.size()){
         ui->statusbar->setStyleSheet("color: red");
-        ui->statusbar->showMessage("Can not open file.",5000);
+        ui->statusbar->showMessage("Can not open " + filePath,5000);
+        return;
     }
-    else if(file.size() ==0){ //file is empty
-        ui->statusbar->setStyleSheet("color: red");
-        ui->statusbar->showMessage(file_name+" is empty.",5000);
-        file.close();
 
-    }
-    else{
+    try{
+        tsp_ = loader_->load(filePath);
+        ui->customPlot->setWindowTitle(filePath);
         ui->statusbar->setStyleSheet("color: green");
-        ui->statusbar->showMessage(file_name+" has been loaded successfully.",5000);
+        ui->statusbar->showMessage(filePath +" has been loaded successfully.",5000);
 
-        xml_file.setContent(&file);
-        file.close();
+        ui->customPlot->clearGraphs(); //pawian, czy potrzebne
+        ui->customPlot->plotLayout()->removeAt(0);
+        ui->customPlot->plotLayout()->addElement(
+            0, 0, new QCPTextElement(ui->customPlot, filePath, QFont("sans", 12, QFont::Bold)));
 
+        ui->customPlot->addGraph();
+        ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
+        ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
+        ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
+        ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
 
-        if(!ReadHolesPosition()){ //there is not elements to be drawn
-            ui->statusbar->setStyleSheet("color: red");
-            ui->statusbar->showMessage("Loaded board is empty.",5000);
-        }
-        else{
-            //drawing
-            //delete previuos plot
-            ui->customPlot->clearGraphs();
-            // create graph and assign data to it:
-            ui->customPlot->addGraph();
-            ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
-            ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
-            ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
-            ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
+        ui->customPlot->addGraph();
+        ui->customPlot->graph(1)->setData({tsp_.startPoint().x()}, {tsp_.startPoint().y()}); //pawian usunac lancuszek
+        ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
+        ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
+        ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
-            ui->customPlot->addGraph();
-            ui->customPlot->graph(1)->setData({tsp_.startPoint().x()}, {tsp_.startPoint().y()});
-            ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
-            ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
-            ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
+        ui->customPlot->replot();
 
-            ui->customPlot->replot();
+        //pawian czy tego potrzebujemy
+        // 5. ustawienie początkowej permutacji
+        //currentPerm_.resize(problem_.pointsCount());
+        //std::iota(currentPerm_.begin(), currentPerm_.end(), 0);
 
-            //making distance matrix
-            tempX = tsp_.pointX();
-            tempY = tsp_.pointY();
-            tempX.push_front(tsp_.startPoint().x()); //add starting point (0,0)
-            tempY.push_front(tsp_.startPoint().y());
-            size = tempX.size();
-
-            auto& dist = tsp_.dist();
-            dist.resize(size);
-            for(int i = 0;i < size ; i++){
-                dist[i].resize(size);
-            }
-
-            //computing distance matrix
-            for(int i=0;i<size;i++){
-                for(int j=0;j<size;j++){
-                    dist[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
-                }
-            }
-            ui->startBtn->setEnabled(true);
-            ui->algorithmBox->setEnabled(true);
-        }
+        ui->startBtn->setEnabled(true);
+        ui->algorithmBox->setEnabled(true);
+    }
+    catch(const std::exception& ex) {
+        ui->statusbar->setStyleSheet("color: red");
+        ui->statusbar->showMessage(QString("Load error: %1").arg(ex.what()), 5000);
     }
 }
 

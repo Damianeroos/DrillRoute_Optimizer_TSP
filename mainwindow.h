@@ -8,6 +8,7 @@
 
 #include "sa_options.h"
 #include "tsp_problem.h"
+#include "brdtsploader.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -40,6 +41,8 @@ private:
     SA_options w_options;
 
     TspProblem tsp_;
+
+    std::unique_ptr<ITspLoader> loader_;
 
     QString file_name;
     QFile file;

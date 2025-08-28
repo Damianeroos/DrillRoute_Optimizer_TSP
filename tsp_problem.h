@@ -12,15 +12,27 @@ class TspProblem
 {
 public:
     TspProblem(){
-        startX = START_POINT_X;
-        startY = START_POINT_Y;
+        startPoint_.setX(START_POINT_X);
+        startPoint_.setY(START_POINT_Y);
     }
+    void clear();
+
+    QVector<double>& pointX();
+
+    QVector<double>& pointY();
+
+
+
+    QPointF &startPoint();
+
+    QVector<QVector<double> >& dist();
 
 private:
     QVector<int> permutation_;
     QVector<QVector<double>> dist_;
     QVector<QPoint> points_;
-    QPoint startX, startY;
+    QVector<double> pointX_, pointY_;
+    QPointF startPoint_;
 };
 
 #endif // TSPPROBLEM_H

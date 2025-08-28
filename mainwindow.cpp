@@ -117,6 +117,7 @@ void MainWindow::on_loadBtn_clicked()
     X.clear();
     Y.clear();
     Permutation.clear();
+    tsp_.clear();
 
     file_name = QFileDialog::getOpenFileName(this,"Open .brd file","../","Eagle files(*.brd *.xml *.txt)");
     ui->customPlot->setWindowTitle(file_name);
@@ -154,13 +155,13 @@ void MainWindow::on_loadBtn_clicked()
             ui->customPlot->clearGraphs();
             // create graph and assign data to it:
             ui->customPlot->addGraph();
-            ui->customPlot->graph(0)->setData(X, Y);
+            ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
             ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
             ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
             ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
 
             ui->customPlot->addGraph();
-            ui->customPlot->graph(1)->setData(point0,point0);
+            ui->customPlot->graph(1)->setData({tsp_.startPoint().x()}, {tsp_.startPoint().y()});
             ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
             ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
             ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
@@ -168,22 +169,21 @@ void MainWindow::on_loadBtn_clicked()
             ui->customPlot->replot();
 
             //making distance matrix
-            tempX = X;
-            tempY = Y;
-            tempX.push_front(0); //add starting point (0,0)
-            tempY.push_front(0);
+            tempX = tsp_.pointX();
+            tempY = tsp_.pointY();
+            tempX.push_front(tsp_.startPoint().x()); //add starting point (0,0)
+            tempY.push_front(tsp_.startPoint().y());
             size = tempX.size();
 
-            DistanceMatrix = new double* [size]; //creating distance matrix
-
+            tsp_.dist().resize(size);
             for(int i = 0;i < size ; i++){
-                DistanceMatrix[i] = new double [size];
+                tsp_.dist()[i].resize(size);
             }
 
             //computing distance matrix
             for(int i=0;i<size;i++){
                 for(int j=0;j<size;j++){
-                    DistanceMatrix[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
+                    tsp_.dist()[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
                 }
             }
             ui->startBtn->setEnabled(true);
@@ -299,8 +299,10 @@ int MainWindow::ReadHolesPosition()
                                         pads = j.toElement();
                                         //adding and computing pads position
                                         if(rot == "R0"){
-                                            X.push_back(pads.attribute("x").toDouble()+x);
-                                            Y.push_back(pads.attribute("y").toDouble()+y);
+                                            tsp_.pointX().push_back(pads.attribute("x").toDouble()+x);
+                                            tsp_.pointY().push_back(pads.attribute("y").toDouble()+y);
+//                                            X.push_back(pads.attribute("x").toDouble()+x);
+//                                            Y.push_back(pads.attribute("y").toDouble()+y);
                                         }
                                         if(rot == "R90"){
                                             rad = qDegreesToRadians(90.00);
@@ -308,8 +310,10 @@ int MainWindow::ReadHolesPosition()
                                             yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            X.push_back(xpp+x);
-                                            Y.push_back(ypp+y);
+                                            tsp_.pointX().push_back(xpp+x);
+                                            tsp_.pointY().push_back(ypp+y);
+//                                            X.push_back(xpp+x);
+//                                            Y.push_back(ypp+y);
                                         }
                                         if(rot == "R180"){
                                             rad = qDegreesToRadians(180.00);
@@ -317,8 +321,10 @@ int MainWindow::ReadHolesPosition()
                                             yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            X.push_back(xpp+x);
-                                            Y.push_back(ypp+y);
+                                            tsp_.pointX().push_back(xpp+x);
+                                            tsp_.pointY().push_back(ypp+y);
+//                                            X.push_back(xpp+x);
+//                                            Y.push_back(ypp+y);
                                         }
                                         if(rot == "R270"){
                                             rad = qDegreesToRadians(270.00);
@@ -326,8 +332,10 @@ int MainWindow::ReadHolesPosition()
                                             yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            X.push_back(xpp+x);
-                                            Y.push_back(ypp+y);
+                                            tsp_.pointX().push_back(xpp+x);
+                                            tsp_.pointY().push_back(ypp+y);
+//                                            X.push_back(xpp+x);
+//                                            Y.push_back(ypp+y);
                                         }
                                     }
                                 }

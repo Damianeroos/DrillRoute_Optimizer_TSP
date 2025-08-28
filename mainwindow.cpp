@@ -617,7 +617,7 @@ double MainWindow::ComputeDistance()
         distance += tsp_.dist()[tsp_.permutation()[i]][tsp_.permutation()[i+1]];
     }
 
-    distance+=tsp_.dist()[X.size()][0];
+    distance+=tsp_.dist()[tsp_.pointX().size()][0];
 
     return distance;
 }
@@ -631,7 +631,7 @@ double MainWindow::ComputeDistance(QVector<int> permutation)
         distance += tsp_.dist()[permutation[i]][permutation[i+1]];
     }
 
-    distance+=tsp_.dist()[X.size()][0];
+    distance+=tsp_.dist()[tsp_.pointX().size()][0];
 
     return distance;
 }

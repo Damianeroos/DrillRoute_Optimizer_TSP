@@ -1,6 +1,4 @@
-
-#ifndef TSPPROBLEM_H
-#define TSPPROBLEM_H
+#pragma once
 
 #include<QVector>
 #include<QPoint>
@@ -15,19 +13,13 @@ public:
         startPoint_.setX(START_POINT_X);
         startPoint_.setY(START_POINT_Y);
     }
-    void clear();
 
+    void clear();
     QVector<double>& pointX();
     const QVector<double>& pointX() const;
-
     QVector<double>& pointY();
-
-
-
     QPointF &startPoint();
-
     QVector<QVector<double> >& dist();
-
     QVector<int>& permutation();
 
 private:
@@ -38,4 +30,3 @@ private:
     QPointF startPoint_;
 };
 
-#endif // TSPPROBLEM_H

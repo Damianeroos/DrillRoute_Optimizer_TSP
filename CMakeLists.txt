@@ -23,6 +23,8 @@ set(PROJECT_SOURCES
         sa_options.ui
         sa_options.cpp
         sa_options.h
+        tsp_problem.cpp
+        tsp_problem.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

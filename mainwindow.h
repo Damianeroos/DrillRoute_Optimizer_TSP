@@ -7,7 +7,7 @@
 #include <QtXml>
 
 #include "sa_options.h"
-
+#include "tsp_problem.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -38,6 +38,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
     SA_options w_options;
+
+    TspProblem tsp_;
 
     QString file_name;
     QFile file;

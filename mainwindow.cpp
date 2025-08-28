@@ -43,13 +43,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    if(!X.isEmpty()){
-        for(int i=0;i<=X.size();i++){
-            delete [] DistanceMatrix[i];
-        }
-        delete [] DistanceMatrix;
-    }
-
     delete ui;
 }
 
@@ -106,17 +99,7 @@ void MainWindow::on_loadBtn_clicked()
     QVector<double> tempX,tempY,point0;
     int size;
     point0.push_back(0);
-    //clearing previuos data
-    if(!X.isEmpty()){
-        for(int i=0;i<=X.size();i++){
-            delete [] DistanceMatrix[i];
-        }
-        delete [] DistanceMatrix;
-    }
 
-    X.clear();
-    Y.clear();
-    Permutation.clear();
     tsp_.clear();
 
     file_name = QFileDialog::getOpenFileName(this,"Open .brd file","../","Eagle files(*.brd *.xml *.txt)");
@@ -256,53 +239,31 @@ int MainWindow::ReadHolesPosition()
 
     QString library_urn,package,rot;
     double x,y,xp,yp,rad,xpp,ypp;
-    //clearing previous points
-    X.clear();
-    Y.clear();
 
     if(elements.isNull())
         return 0;
 
-
-
     for (QDomNode n = elements.firstChildElement(); !n.isNull(); n = n.nextSiblingElement()) {
-        //here are elements
-        //qDebug() << n.nodeName();
         atrr = n.toElement();
         library_urn = atrr.attribute("library_urn");
         package = atrr.attribute("package");
-        rot = atrr.attribute("rot","R0");//if there is no rot atrr, then R = 0
+        rot = atrr.attribute("rot","R0");
         x = atrr.attribute("x").toDouble();
         y = atrr.attribute("y").toDouble();
-        //here we are looking for suitable libraries
 
         for(QDomNode m = libraries.firstChildElement(); !m.isNull();m = m.nextSiblingElement()){
-            //here are libraries
-            //qDebug() << m.nodeName();
             atrr = m.toElement();
             if(atrr.attribute("urn")==library_urn){
-                //this is suitable library, now looking for good pacakage
-
                 for(QDomNode k = atrr.firstChildElement("packages");!k.isNull();k = k.nextSiblingElement()){
-
-                    //here are packages and packages3d (idk why?!)
-
                     if(k.nodeName()=="packages"){
-                        //qDebug()<<k.nodeName();
                         for(QDomNode i = k.firstChild();!i.isNull();i = i.nextSiblingElement()){
-                            //hera are package
                             if(package == i.toElement().attribute("name")){
-                                //good package
                                 for(QDomNode j = i.firstChild();!j.isNull();j = j.nextSiblingElement()){
-                                    //looking for pads
                                     if(j.nodeName()=="pad"){
                                         pads = j.toElement();
-                                        //adding and computing pads position
                                         if(rot == "R0"){
                                             tsp_.pointX().push_back(pads.attribute("x").toDouble()+x);
                                             tsp_.pointY().push_back(pads.attribute("y").toDouble()+y);
-//                                            X.push_back(pads.attribute("x").toDouble()+x);
-//                                            Y.push_back(pads.attribute("y").toDouble()+y);
                                         }
                                         if(rot == "R90"){
                                             rad = qDegreesToRadians(90.00);
@@ -312,8 +273,6 @@ int MainWindow::ReadHolesPosition()
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
                                             tsp_.pointX().push_back(xpp+x);
                                             tsp_.pointY().push_back(ypp+y);
-//                                            X.push_back(xpp+x);
-//                                            Y.push_back(ypp+y);
                                         }
                                         if(rot == "R180"){
                                             rad = qDegreesToRadians(180.00);
@@ -323,8 +282,6 @@ int MainWindow::ReadHolesPosition()
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
                                             tsp_.pointX().push_back(xpp+x);
                                             tsp_.pointY().push_back(ypp+y);
-//                                            X.push_back(xpp+x);
-//                                            Y.push_back(ypp+y);
                                         }
                                         if(rot == "R270"){
                                             rad = qDegreesToRadians(270.00);
@@ -334,8 +291,6 @@ int MainWindow::ReadHolesPosition()
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
                                             tsp_.pointX().push_back(xpp+x);
                                             tsp_.pointY().push_back(ypp+y);
-//                                            X.push_back(xpp+x);
-//                                            Y.push_back(ypp+y);
                                         }
                                     }
                                 }
@@ -354,26 +309,21 @@ int MainWindow::ReadHolesPosition()
 
 double MainWindow::NN_algorithm()
 {
-
     QVector<int> permutation;
-
-
     double distance = 0;
-
-
 
     //starting algorithm
     bool pointUsed = false;
     double bestDist = 99999999999;
     int bestPoint,i;
     bestPoint = -1;
-    // permutation.push_back(0);//starting point is always at (0,0)
 
-    //first nearest hole
-    for(int i = 1 ; i <= X.size() ; i++){
-        if(bestDist > DistanceMatrix[0][i] ){
+    size_t n = tsp_.pointX().size();
+
+    for(int i = 1 ; i <= n ; i++){
+        if(bestDist > tsp_.dist()[0][i] ){
             bestPoint=i;
-            bestDist = DistanceMatrix[0][i];
+            bestDist = tsp_.dist()[0][i];
         }
     }
     permutation.push_back(bestPoint);
@@ -381,10 +331,10 @@ double MainWindow::NN_algorithm()
     distance += bestDist;
     bestDist = 9999999999999;
 
-    while(permutation.size()!=X.size()+1){
+    while(permutation.size()!=n+1){
 
 
-        for( i = 1; i <= X.size() ;i++){
+        for( i = 1; i <= n ;i++){
 
             //can not pointing on the same element
             for(int j = 0; j <permutation.size();j++){
@@ -392,8 +342,8 @@ double MainWindow::NN_algorithm()
                     pointUsed = true;
                 }
             }
-            if(bestDist > DistanceMatrix[permutation.back()][i] && !pointUsed){
-                bestDist = DistanceMatrix[permutation.back()][i];
+            if(bestDist > tsp_.dist()[permutation.back()][i] && !pointUsed){
+                bestDist = tsp_.dist()[permutation.back()][i];
                 bestPoint = i;
 
             }
@@ -405,10 +355,10 @@ double MainWindow::NN_algorithm()
         permutation.push_back(bestPoint);
 
     }
-    distance += DistanceMatrix[0][permutation.back()]; // returning route to point starting (0,0)
+    distance += tsp_.dist()[0][permutation.back()]; // returning route to point starting (0,0)
 
 
-    Permutation = permutation;
+    tsp_.permutation() = permutation;
 
     return ComputeDistance();
 }
@@ -418,12 +368,12 @@ double MainWindow::NP_algorithm()
     QVector<int> permutation;
 
     //starting algorithm
-    for(int i=1;i<=X.size();i++){
+    for(int i=1;i<=tsp_.pointX().size();i++){
         permutation.push_back(i);
     }
 
 
-    Permutation = permutation;
+    tsp_.permutation() = permutation;
 
     return ComputeDistance();
 
@@ -562,41 +512,41 @@ void MainWindow::DrawPermutation()
     //clear previous permutation
     ui->customPlot->clearGraphs();
     ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setData(X, Y);
+    ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
     ui->customPlot->addGraph();
-    ui->customPlot->graph(1)->setData(point0,point0);
+    ui->customPlot->graph(1)->setData({tsp_.startPoint().x()}, {tsp_.startPoint().y()});
     ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
     ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
-    //no permutation
-    if(Permutation.size()==0)
+    //no tsp_.permutation()
+    if(tsp_.permutation().size()==0)
         return;
 
-    for(int i = 0; i < Permutation.size()-1 ;i++){
-        x[0] = X[Permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
-        x[1] = X[Permutation[i+1]-1];
-        y[0] = Y[Permutation[i]-1];
-        y[1] = Y[Permutation[i+1]-1];
+    for(int i = 0; i < tsp_.permutation().size()-1 ;i++){
+        x[0] = tsp_.pointX()[tsp_.permutation()[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
+        x[1] = tsp_.pointX()[tsp_.permutation()[i+1]-1];
+        y[0] = tsp_.pointY()[tsp_.permutation()[i]-1];
+        y[1] = tsp_.pointY()[tsp_.permutation()[i+1]-1];
 
         ui->customPlot->addGraph();
         ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
     }
     //adding first and last route
     x[0] = 0;
-    x[1] = X[Permutation[0]-1];
+    x[1] = tsp_.pointX()[tsp_.permutation()[0]-1];
     y[0] = 0;
-    y[1] = Y[Permutation[0]-1];
+    y[1] = tsp_.pointY()[tsp_.permutation()[0]-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
     x[0] = 0;
-    x[1] = X[Permutation.back()-1];
+    x[1] = tsp_.pointX()[tsp_.permutation().back()-1];
     y[0] = 0;
-    y[1] = Y[Permutation.back()-1];
+    y[1] = tsp_.pointY()[tsp_.permutation().back()-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
@@ -613,12 +563,12 @@ void MainWindow::DrawPermutation(QVector<int> permutation)
     //clear previous permutation
     ui->customPlot->clearGraphs();
     ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setData(X, Y);
+    ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
     ui->customPlot->addGraph();
-    ui->customPlot->graph(1)->setData(point0,point0);
+    ui->customPlot->graph(1)->setData({tsp_.startPoint().x()}, {tsp_.startPoint().y()});
     ui->customPlot->graph(1)->setPen(QColor(255, 0, 0, 255));
     ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
@@ -628,26 +578,26 @@ void MainWindow::DrawPermutation(QVector<int> permutation)
         return;
 
     for(int i = 0; i < permutation.size()-1 ;i++){
-        x[0] = X[permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
-        x[1] = X[permutation[i+1]-1];
-        y[0] = Y[permutation[i]-1];
-        y[1] = Y[permutation[i+1]-1];
+        x[0] = tsp_.pointX()[permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
+        x[1] = tsp_.pointX()[permutation[i+1]-1];
+        y[0] = tsp_.pointY()[permutation[i]-1];
+        y[1] = tsp_.pointY()[permutation[i+1]-1];
 
         ui->customPlot->addGraph();
         ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
     }
     //adding first and last route
     x[0] = 0;
-    x[1] = X[permutation[0]-1];
+    x[1] = tsp_.pointX()[permutation[0]-1];
     y[0] = 0;
-    y[1] = Y[permutation[0]-1];
+    y[1] = tsp_.pointY()[permutation[0]-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
     x[0] = 0;
-    x[1] = X[permutation.back()-1];
+    x[1] = tsp_.pointX()[permutation.back()-1];
     y[0] = 0;
-    y[1] = Y[permutation.back()-1];
+    y[1] = tsp_.pointY()[permutation.back()-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
@@ -663,11 +613,11 @@ double MainWindow::ComputeDistance()
 
 
 
-    for(int i=0;i<Permutation.size()-1;i++){
-        distance += DistanceMatrix[Permutation[i]][Permutation[i+1]];
+    for(int i=0;i<tsp_.pointX().size()-1;i++){
+        distance += tsp_.dist()[tsp_.permutation()[i]][tsp_.permutation()[i+1]];
     }
 
-    distance+=DistanceMatrix[X.size()][0];
+    distance+=tsp_.dist()[X.size()][0];
 
 
 
@@ -682,10 +632,10 @@ double MainWindow::ComputeDistance(QVector<int> permutation)
 
 
     for(int i=0;i<permutation.size()-1;i++){
-        distance += DistanceMatrix[permutation[i]][permutation[i+1]];
+        distance += tsp_.dist()[permutation[i]][permutation[i+1]];
     }
 
-    distance+=DistanceMatrix[X.size()][0];
+    distance+=tsp_.dist()[X.size()][0];
 
 
     return distance;

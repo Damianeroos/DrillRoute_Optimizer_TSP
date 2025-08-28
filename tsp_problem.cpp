@@ -16,6 +16,11 @@ QVector<double>& TspProblem::pointX()
     return pointX_;
 }
 
+const QVector<double> &TspProblem::pointX() const
+{
+    return pointX_;
+}
+
 QVector<double>& TspProblem::pointY()
 {
     return pointY_;
@@ -29,6 +34,11 @@ QPointF& TspProblem::startPoint()
 QVector<QVector<double> >& TspProblem::dist()
 {
     return dist_;
+}
+
+QVector<int>& TspProblem::permutation()
+{
+    return permutation_;
 }
 
 

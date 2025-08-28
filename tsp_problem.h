@@ -18,6 +18,7 @@ public:
     void clear();
 
     QVector<double>& pointX();
+    const QVector<double>& pointX() const;
 
     QVector<double>& pointY();
 
@@ -26,6 +27,8 @@ public:
     QPointF &startPoint();
 
     QVector<QVector<double> >& dist();
+
+    QVector<int>& permutation();
 
 private:
     QVector<int> permutation_;

@@ -158,15 +158,16 @@ void MainWindow::on_loadBtn_clicked()
             tempY.push_front(tsp_.startPoint().y());
             size = tempX.size();
 
-            tsp_.dist().resize(size);
+            auto& dist = tsp_.dist();
+            dist.resize(size);
             for(int i = 0;i < size ; i++){
-                tsp_.dist()[i].resize(size);
+                dist[i].resize(size);
             }
 
             //computing distance matrix
             for(int i=0;i<size;i++){
                 for(int j=0;j<size;j++){
-                    tsp_.dist()[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
+                    dist[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
                 }
             }
             ui->startBtn->setEnabled(true);
@@ -243,6 +244,9 @@ int MainWindow::ReadHolesPosition()
     if(elements.isNull())
         return 0;
 
+    auto& X = tsp_.pointX();
+    auto& Y = tsp_.pointY();
+
     for (QDomNode n = elements.firstChildElement(); !n.isNull(); n = n.nextSiblingElement()) {
         atrr = n.toElement();
         library_urn = atrr.attribute("library_urn");
@@ -262,8 +266,8 @@ int MainWindow::ReadHolesPosition()
                                     if(j.nodeName()=="pad"){
                                         pads = j.toElement();
                                         if(rot == "R0"){
-                                            tsp_.pointX().push_back(pads.attribute("x").toDouble()+x);
-                                            tsp_.pointY().push_back(pads.attribute("y").toDouble()+y);
+                                            X.push_back(pads.attribute("x").toDouble()+x);
+                                            Y.push_back(pads.attribute("y").toDouble()+y);
                                         }
                                         if(rot == "R90"){
                                             rad = qDegreesToRadians(90.00);
@@ -271,8 +275,8 @@ int MainWindow::ReadHolesPosition()
                                             yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            tsp_.pointX().push_back(xpp+x);
-                                            tsp_.pointY().push_back(ypp+y);
+                                            X.push_back(xpp+x);
+                                            Y.push_back(ypp+y);
                                         }
                                         if(rot == "R180"){
                                             rad = qDegreesToRadians(180.00);
@@ -280,8 +284,8 @@ int MainWindow::ReadHolesPosition()
                                             yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            tsp_.pointX().push_back(xpp+x);
-                                            tsp_.pointY().push_back(ypp+y);
+                                            X.push_back(xpp+x);
+                                            Y.push_back(ypp+y);
                                         }
                                         if(rot == "R270"){
                                             rad = qDegreesToRadians(270.00);
@@ -289,8 +293,8 @@ int MainWindow::ReadHolesPosition()
                                             yp = pads.attribute("y").toDouble();
                                             xpp = xp*qCos(rad)-yp*qSin(rad);
                                             ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            tsp_.pointX().push_back(xpp+x);
-                                            tsp_.pointY().push_back(ypp+y);
+                                            X.push_back(xpp+x);
+                                            Y.push_back(ypp+y);
                                         }
                                     }
                                 }
@@ -320,10 +324,11 @@ double MainWindow::NN_algorithm()
 
     size_t n = tsp_.pointX().size();
 
+    auto& dist = tsp_.dist();
     for(int i = 1 ; i <= n ; i++){
-        if(bestDist > tsp_.dist()[0][i] ){
+        if(bestDist > dist[0][i] ){
             bestPoint=i;
-            bestDist = tsp_.dist()[0][i];
+            bestDist = dist[0][i];
         }
     }
     permutation.push_back(bestPoint);
@@ -342,8 +347,8 @@ double MainWindow::NN_algorithm()
                     pointUsed = true;
                 }
             }
-            if(bestDist > tsp_.dist()[permutation.back()][i] && !pointUsed){
-                bestDist = tsp_.dist()[permutation.back()][i];
+            if(bestDist > dist[permutation.back()][i] && !pointUsed){
+                bestDist = dist[permutation.back()][i];
                 bestPoint = i;
 
             }
@@ -355,8 +360,7 @@ double MainWindow::NN_algorithm()
         permutation.push_back(bestPoint);
 
     }
-    distance += tsp_.dist()[0][permutation.back()]; // returning route to point starting (0,0)
-
+    distance += dist[0][permutation.back()]; // returning route to point starting (0,0)
 
     tsp_.permutation() = permutation;
 
@@ -396,14 +400,13 @@ double MainWindow::SA_algorithm()
         nPermutation = sPermutation;
         for(int i = 0; i < w_options.iter ;i++){
             QCoreApplication::processEvents(); //keeping gui responsive
-            //generating two random numbers
+
             a = rand() % nPermutation.size();
             b = rand() % nPermutation.size();
             while(a==b){
-                b = rand() % nPermutation.size(); // a and b shouldnt be the same
+                b = rand() % nPermutation.size();
             }
-            // qDebug()<<QString::number(a) + " " + QString::number(b);
-            //making similar but different solution
+
             temp = nPermutation[a];
             nPermutation[a]=nPermutation[b];
             nPermutation[b] = temp;
@@ -423,10 +426,8 @@ double MainWindow::SA_algorithm()
             }
         }
         Temperature *= w_options.alpha;
-        // qDebug()<<QString::number(Temperature);
     }
     tsp_.permutation() = bPermutation;
-
 
     return ComputeDistance();
 }
@@ -507,13 +508,15 @@ QVector<int> MainWindow::opt2_swap(QVector<int> permutation, int a, int b)
 
 void MainWindow::DrawPermutation()
 {
-    QVector<double> x(2),y(2),point0;
-    point0.push_back(0);
+    QVector<double> x(2),y(2);
+
+    QVector<double>& X = tsp_.pointX();
+    QVector<double>& Y = tsp_.pointY();
 
     //clear previous permutation
     ui->customPlot->clearGraphs();
     ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
+    ui->customPlot->graph(0)->setData(X, Y);
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
@@ -523,48 +526,49 @@ void MainWindow::DrawPermutation()
     ui->customPlot->graph(1)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(1)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 12));
 
-    //no tsp_.permutation()
-    if(tsp_.permutation().size()==0)
+
+    auto& permutation = tsp_.permutation();
+    if(permutation.size()==0)
         return;
 
-    for(int i = 0; i < tsp_.permutation().size()-1 ;i++){
-        x[0] = tsp_.pointX()[tsp_.permutation()[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
-        x[1] = tsp_.pointX()[tsp_.permutation()[i+1]-1];
-        y[0] = tsp_.pointY()[tsp_.permutation()[i]-1];
-        y[1] = tsp_.pointY()[tsp_.permutation()[i+1]-1];
+    for(int i = 0; i < permutation.size()-1 ;i++){
+        x[0] = X[permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
+        x[1] = X[permutation[i+1]-1];
+        y[0] = Y[permutation[i]-1];
+        y[1] = Y[permutation[i+1]-1];
 
         ui->customPlot->addGraph();
         ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
     }
     //adding first and last route
     x[0] = 0;
-    x[1] = tsp_.pointX()[tsp_.permutation()[0]-1];
+    x[1] = X[permutation[0]-1];
     y[0] = 0;
-    y[1] = tsp_.pointY()[tsp_.permutation()[0]-1];
+    y[1] = Y[permutation[0]-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
     x[0] = 0;
-    x[1] = tsp_.pointX()[tsp_.permutation().back()-1];
+    x[1] = X[permutation.back()-1];
     y[0] = 0;
-    y[1] = tsp_.pointY()[tsp_.permutation().back()-1];
+    y[1] = Y[permutation.back()-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
-
-    //ui->customPlot->rescaleAxes();
     ui->customPlot->replot();
 }
 
 void MainWindow::DrawPermutation(QVector<int> permutation)
 {
-    QVector<double> x(2),y(2),point0;
-    point0.push_back(0);
+    QVector<double> x(2),y(2);
+
+    QVector<double>& X = tsp_.pointX();
+    QVector<double>& Y = tsp_.pointY();
 
     //clear previous permutation
     ui->customPlot->clearGraphs();
     ui->customPlot->addGraph();
-    ui->customPlot->graph(0)->setData(tsp_.pointX(), tsp_.pointY());
+    ui->customPlot->graph(0)->setData(X, Y);
     ui->customPlot->graph(0)->setPen(QColor(0, 0, 0, 255));
     ui->customPlot->graph(0)->setLineStyle(QCPGraph::lsNone);
     ui->customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 8));
@@ -579,48 +583,41 @@ void MainWindow::DrawPermutation(QVector<int> permutation)
         return;
 
     for(int i = 0; i < permutation.size()-1 ;i++){
-        x[0] = tsp_.pointX()[permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
-        x[1] = tsp_.pointX()[permutation[i+1]-1];
-        y[0] = tsp_.pointY()[permutation[i]-1];
-        y[1] = tsp_.pointY()[permutation[i+1]-1];
+        x[0] = X[permutation[i]-1]; //vextor X and Y dont have starting point (0,0) so then -1
+        x[1] = X[permutation[i+1]-1];
+        y[0] = Y[permutation[i]-1];
+        y[1] = Y[permutation[i+1]-1];
 
         ui->customPlot->addGraph();
         ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
     }
     //adding first and last route
     x[0] = 0;
-    x[1] = tsp_.pointX()[permutation[0]-1];
+    x[1] = X[permutation[0]-1];
     y[0] = 0;
-    y[1] = tsp_.pointY()[permutation[0]-1];
+    y[1] = Y[permutation[0]-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
     x[0] = 0;
-    x[1] = tsp_.pointX()[permutation.back()-1];
+    x[1] = X[permutation.back()-1];
     y[0] = 0;
-    y[1] = tsp_.pointY()[permutation.back()-1];
+    y[1] = Y[permutation.back()-1];
     ui->customPlot->addGraph();
     ui->customPlot->graph(ui->customPlot->graphCount()-1)->setData(x,y);
 
-
-    //ui->customPlot->rescaleAxes();
     ui->customPlot->replot();
 }
 
 double MainWindow::ComputeDistance()
 {
-
     double distance = 0;
-
-
 
     for(int i=0;i<tsp_.pointX().size()-1;i++){
         distance += tsp_.dist()[tsp_.permutation()[i]][tsp_.permutation()[i+1]];
     }
 
     distance+=tsp_.dist()[X.size()][0];
-
-
 
     return distance;
 }
@@ -630,14 +627,11 @@ double MainWindow::ComputeDistance(QVector<int> permutation)
 
     double distance = 0;
 
-
-
     for(int i=0;i<permutation.size()-1;i++){
         distance += tsp_.dist()[permutation[i]][permutation[i+1]];
     }
 
     distance+=tsp_.dist()[X.size()][0];
-
 
     return distance;
 }

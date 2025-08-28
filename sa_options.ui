@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SA_options</class>
- <widget class="QWidget" name="SA_options">
+ <class>Sa_options</class>
+ <widget class="QWidget" name="Sa_options">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>256</width>
-    <height>216</height>
+    <width>230</width>
+    <height>202</height>
    </rect>
   </property>
   <property name="windowTitle">

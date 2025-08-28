@@ -1,9 +1,9 @@
 #include "sa_options.h"
-#include "ui_sa_options.h"
+#include "./ui_sa_options.h"
 
 SA_options::SA_options(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::SA_options)
+    ui(new Ui::Sa_options)
 {
     ui->setupUi(this);
     this->setWindowTitle("Simulated annealing opions");

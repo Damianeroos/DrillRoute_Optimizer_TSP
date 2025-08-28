@@ -3,9 +3,9 @@
 
 #include <QWidget>
 
-namespace Ui {
-class SA_options;
-}
+QT_BEGIN_NAMESPACE
+namespace Ui { class Sa_options; }
+QT_END_NAMESPACE
 
 class SA_options : public QWidget
 {
@@ -36,7 +36,7 @@ private slots:
     void on_rpBox_valueChanged(int arg1);
 
 private:
-    Ui::SA_options *ui;
+    Ui::Sa_options *ui;
 
 
 };

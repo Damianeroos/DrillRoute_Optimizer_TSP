@@ -1,13 +1,14 @@
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "qcustomplot.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
-
 
     MainWindow::setWindowTitle("PCB driller path finder");
     ui->statusbar->showMessage("No .brd file has been loaded");
@@ -23,20 +24,20 @@ MainWindow::MainWindow(QWidget *parent)
     ui->customPlot->plotLayout()->addElement(0, 0, new QCPTextElement(ui->customPlot, "Empty plot", QFont("sans", 12, QFont::Bold)));
     ui->customPlot->replot();
     ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
-    ui->comboBoxAlg->addItem("NP"); //natural permutation
-    ui->comboBoxAlg->addItem("NN"); //nearest neighbour
-    ui->comboBoxAlg->addItem("SA"); //simulated annealing
-    ui->comboBoxAlg->addItem("2-opt");//2-opt algrithm
-    ui->optionButton->setEnabled(false);
+    ui->algorithmBox->addItem("NP"); //natural permutation
+    ui->algorithmBox->addItem("NN"); //nearest neighbour
+    ui->algorithmBox->addItem("SA"); //simulated annealing
+    ui->algorithmBox->addItem("2-opt");//2-opt algrithm
+    ui->optionBtn->setEnabled(false);
     ui->progressBar->setVisible(false);
+    ui->progressBar->setAlignment(Qt::AlignCenter);
     ui->progressBar->setRange(0,w_options.repeat);
     ui->progressBar->setValue(0);
     ui->progressBar->setFormat("%v/%m");
-    ui->radioBAnimation->setEnabled(false);
-    ui->startButton->setEnabled(false);
-    ui->comboBoxAlg->setEnabled(false);
-    ui->saveButton->setEnabled(false);
-
+    ui->animationBtn->setEnabled(false);
+    ui->startBtn->setEnabled(false);
+    ui->algorithmBox->setEnabled(false);
+    ui->saveBtn->setEnabled(false);
 
 }
 
@@ -49,14 +50,58 @@ MainWindow::~MainWindow()
         delete [] DistanceMatrix;
     }
 
-
-
     delete ui;
 }
 
 
 
-void MainWindow::on_loadFileButton_clicked()
+void MainWindow::on_startBtn_clicked()
+{
+    ui->loadBtn->setEnabled(false);
+    ui->startBtn->setEnabled(false);
+    ui->algorithmBox->setEnabled(false);
+    ui->saveBtn->setEnabled(false);
+    w_options.setEnabled(false);
+    ui->statusbar->setStyleSheet("color: green");
+    ui->statusbar->showMessage("busy...");
+
+    switch (ui->algorithmBox->currentIndex()) {
+    case 0 :
+        ui->finalDistance->setText(QString::number(NP_algorithm()));
+        DrawPermutation();
+        break;
+    case 1 :
+        ui->finalDistance->setText(QString::number(NN_algorithm()));
+        DrawPermutation();
+        break;
+    case 2 :
+        ui->progressBar->setRange(0,w_options.repeat);
+
+        for(int i = 0 ; i < w_options.repeat;i++){
+            ui->progressBar->setFormat("%v/%m");
+            ui->progressBar->setValue(i+1);
+            ui->finalDistance->setText(QString::number(SA_algorithm()));
+            DrawPermutation();
+        }
+        ui->progressBar->setFormat("Complete!!!");
+        break;
+    case 3 :
+        ui->finalDistance->setText(QString::number(opt2_algorithm()));
+        DrawPermutation();
+        break;
+    }
+
+    ui->loadBtn->setEnabled(true);
+    ui->startBtn->setEnabled(true);
+    ui->algorithmBox->setEnabled(true);
+    w_options.setEnabled(true);
+    ui->statusbar->showMessage("complete");
+    ui->saveBtn->setEnabled(true);
+
+}
+
+
+void MainWindow::on_loadBtn_clicked()
 {
     QVector<double> tempX,tempY,point0;
     int size;
@@ -141,14 +186,65 @@ void MainWindow::on_loadFileButton_clicked()
                     DistanceMatrix[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
                 }
             }
-            ui->startButton->setEnabled(true);
-            ui->comboBoxAlg->setEnabled(true);
+            ui->startBtn->setEnabled(true);
+            ui->algorithmBox->setEnabled(true);
         }
     }
+}
 
 
+void MainWindow::on_optionBtn_clicked()
+{
+    w_options.show();
+}
 
 
+void MainWindow::on_animationBtn_clicked(bool checked)
+{
+
+}
+
+
+void MainWindow::on_saveBtn_clicked()
+{
+    QString filename="out_";
+    filename += ui->finalDistance->text();
+    QFile file( filename );
+    if ( file.open(QIODevice::WriteOnly) )
+    {
+        QTextStream stream( &file );
+        for(int i = 0 ; i <  X.size(); i++){
+            stream << QString::number(X[Permutation[i]-1]) + " " +  QString::number(Y[Permutation[i]-1]) << Qt::endl;
+        }
+        ui->statusbar->setStyleSheet("color: blue");
+        ui->statusbar->showMessage("Results saved in " + filename + " file",5000);
+        file.close();
+    }
+    else{
+        ui->statusbar->setStyleSheet("color: red");
+        ui->statusbar->showMessage("Unable to saved file.",5000);
+    }
+}
+
+
+void MainWindow::on_algorithmBox_currentIndexChanged(int index)
+{
+    if(index == 2){
+        ui->optionBtn->setEnabled(true);
+        ui->progressBar->setVisible(true);
+        ui->progressBar->setFormat("%v/%m");
+    }
+    else{
+        ui->optionBtn->setEnabled(false);
+        ui->progressBar->setVisible(false);
+    }
+
+    if(index == 3){
+        ui->animationBtn->setEnabled(true);
+    }
+    else{
+        ui->animationBtn->setEnabled(false);
+    }
 }
 
 int MainWindow::ReadHolesPosition()
@@ -341,7 +437,7 @@ double MainWindow::SA_algorithm()
     while(Temperature > w_options.finalTemp){
         nPermutation = sPermutation;
         for(int i = 0; i < w_options.iter ;i++){
-              QCoreApplication::processEvents(); //keeping gui responsive
+            QCoreApplication::processEvents(); //keeping gui responsive
             //generating two random numbers
             a = rand() % nPermutation.size();
             b = rand() % nPermutation.size();
@@ -397,21 +493,21 @@ double MainWindow::opt2_algorithm()
             for(int k = i + 1; k <Permutation.size()-1;k++){
 
                 NewPermutation = opt2_swap(ExistingPermutation,i,k);
-                   QCoreApplication::processEvents(); //keeping gui responsive
+                QCoreApplication::processEvents(); //keeping gui responsive
 
-               new_distance = ComputeDistance(NewPermutation);
+                new_distance = ComputeDistance(NewPermutation);
 
-               if(ui->radioBAnimation->isChecked()){
-                   DrawPermutation(NewPermutation);
-                   ui->lineDistance->setText(QString::number(best_distance));
-               }
+                if(ui->animationBtn->isChecked()){
+                    DrawPermutation(NewPermutation);
+                    ui->finalDistance->setText(QString::number(best_distance));
+                }
 
-               if(new_distance < best_distance){
-                   ExistingPermutation=NewPermutation;
-                   NoImprovement = false;
-               }
-               if(!NoImprovement)
-                   break;
+                if(new_distance < best_distance){
+                    ExistingPermutation=NewPermutation;
+                    NoImprovement = false;
+                }
+                if(!NoImprovement)
+                    break;
             }
             if(!NoImprovement)
                 break;
@@ -438,10 +534,10 @@ QVector<int> MainWindow::opt2_swap(QVector<int> permutation, int a, int b)
     }
 
     if(b < permutation.size()){
-    for(int i = b ; i >= a ; i--){
-        NewPermutation.push_back(permutation[i]);
+        for(int i = b ; i >= a ; i--){
+            NewPermutation.push_back(permutation[i]);
+        }
     }
-}
     for(int i = b+1; i < permutation.size();i++){
 
         NewPermutation.push_back(permutation[i]);
@@ -585,99 +681,4 @@ double MainWindow::ComputeDistance(QVector<int> permutation)
 
 
     return distance;
-}
-
-void MainWindow::on_startButton_clicked()
-{
-    ui->loadFileButton->setEnabled(false);
-    ui->startButton->setEnabled(false);
-    ui->comboBoxAlg->setEnabled(false);
-    ui->saveButton->setEnabled(false);
-    w_options.setEnabled(false);
-    ui->statusbar->setStyleSheet("color: green");
-    ui->statusbar->showMessage("busy...");
-
-    switch (ui->comboBoxAlg->currentIndex()) {
-    case 0 :
-        ui->lineDistance->setText(QString::number(NP_algorithm()));
-        DrawPermutation();
-        break;
-    case 1 :
-        ui->lineDistance->setText(QString::number(NN_algorithm()));
-        DrawPermutation();
-        break;
-    case 2 :
-        ui->progressBar->setRange(0,w_options.repeat);
-
-        for(int i = 0 ; i < w_options.repeat;i++){
-            ui->progressBar->setFormat("%v/%m");
-            ui->progressBar->setValue(i+1);
-            ui->lineDistance->setText(QString::number(SA_algorithm()));
-            DrawPermutation();
-        }
-        ui->progressBar->setFormat("Complete!!!");
-        break;
-    case 3 :
-        ui->lineDistance->setText(QString::number(opt2_algorithm()));
-        DrawPermutation();
-        break;
-    }
-
-    ui->loadFileButton->setEnabled(true);
-    ui->startButton->setEnabled(true);
-    ui->comboBoxAlg->setEnabled(true);
-    w_options.setEnabled(true);
-    ui->statusbar->showMessage("complete");
-    ui->saveButton->setEnabled(true);
-
-
-}
-
-void MainWindow::on_optionButton_clicked()
-{
-    w_options.show();
-}
-
-void MainWindow::on_comboBoxAlg_currentIndexChanged(int index)
-{
-    if(index == 2){
-        ui->optionButton->setEnabled(true);
-        ui->progressBar->setVisible(true);
-        ui->progressBar->setFormat("%v/%m");
-    }
-    else{
-        ui->optionButton->setEnabled(false);
-        ui->progressBar->setVisible(false);
-    }
-
-    if(index == 3){
-        ui->radioBAnimation->setEnabled(true);
-    }
-    else{
-        ui->radioBAnimation->setEnabled(false);
-    }
-}
-
-
-void MainWindow::on_saveButton_clicked()
-{
-    QString filename="out_";
-    filename += ui->lineDistance->text();
-    QFile file( filename );
-    if ( file.open(QIODevice::WriteOnly) )
-    {
-        QTextStream stream( &file );
-        for(int i = 0 ; i <  X.size(); i++){
-            stream << QString::number(X[Permutation[i]-1]) + " " +  QString::number(Y[Permutation[i]-1]) << endl;
-        }
-        ui->statusbar->setStyleSheet("color: blue");
-        ui->statusbar->showMessage("Results saved in " + filename + " file",5000);
-        file.close();
-    }
-    else{
-        ui->statusbar->setStyleSheet("color: red");
-        ui->statusbar->showMessage("Unable to saved file.",5000);
-    }
-
-
 }

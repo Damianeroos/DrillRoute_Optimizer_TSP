@@ -30,8 +30,6 @@ private slots:
 
     void on_optionBtn_clicked();
 
-    void on_animationBtn_clicked(bool checked);
-
     void on_saveBtn_clicked();
 
     void on_algorithmBox_currentIndexChanged(int index);
@@ -41,14 +39,12 @@ private:
     SA_options w_options;
 
     TspProblem tsp_;
-
     std::unique_ptr<ITspLoader> loader_;
 
     QString file_name;
     QFile file;
     QDomDocument xml_file;
 
-    int ReadHolesPosition(void);
     double NN_algorithm(void);
     double NP_algorithm(void);
     double SA_algorithm(void);

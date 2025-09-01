@@ -34,8 +34,17 @@ QVector<QVector<double> >& TspProblem::dist()
 {
     return dist_;
 }
+const QVector<QVector<double> >& TspProblem::dist() const
+{
+    return dist_;
+}
 
 QVector<int>& TspProblem::permutation()
+{
+    return permutation_;
+}
+
+const QVector<int>& TspProblem::permutation() const
 {
     return permutation_;
 }
@@ -68,6 +77,19 @@ void TspProblem::buildDistanceMatrix()
             dist_[i][j]=qSqrt(qPow(tempX[i]-tempX[j],2)+qPow(tempY[i]-tempY[j],2));
         }
     }
+}
+
+double TspProblem::computeDistance() const
+{
+    double distance = 0;
+
+    for(int i=0;i<pointX().size()-1;i++){
+        distance += dist()[permutation()[i]][permutation()[i+1]];
+    }
+
+    distance+=dist()[pointX().size()][0];
+
+    return distance;
 }
 
 

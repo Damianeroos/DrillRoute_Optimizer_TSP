@@ -29,6 +29,15 @@ set(PROJECT_SOURCES
         brdtsploader.h
         helpers.cpp
         helpers.h
+        algorithm/ialgorithm.h
+        algorithm/alg_np.h
+        algorithm/alg_np.cpp
+        algorithm/alg_nn.h
+        algorithm/alg_nn.cpp
+        algorithm/alg_sa.h
+        algorithm/alg_sa.cpp
+        algorithm/alg_two_opt.h
+        algorithm/alg_two_opt.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

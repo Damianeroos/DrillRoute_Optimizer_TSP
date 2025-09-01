@@ -6,6 +6,7 @@
 
 #include <memory>
 
+enum class Algorithm { NP, NN, SA, TwoOpt };
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -29,10 +30,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->customPlot->plotLayout()->addElement(0, 0, new QCPTextElement(ui->customPlot, "Empty plot", QFont("sans", 12, QFont::Bold)));
     ui->customPlot->replot();
     ui->customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
-    ui->algorithmBox->addItem("NP"); //natural permutation
-    ui->algorithmBox->addItem("NN"); //nearest neighbour
-    ui->algorithmBox->addItem("SA"); //simulated annealing
-    ui->algorithmBox->addItem("2-opt");//2-opt algrithm
+
+    ui->algorithmBox->addItem("NP",     (int)Algorithm::NP);     //natural permutation
+    ui->algorithmBox->addItem("NN",     (int)Algorithm::NN);     //nearest neighbour
+    ui->algorithmBox->addItem("SA",     (int)Algorithm::SA);     //simulated annealing
+    ui->algorithmBox->addItem("2-opt",  (int)Algorithm::TwoOpt); //2-opt algrithm
+
     ui->optionBtn->setEnabled(false);
     ui->progressBar->setVisible(false);
     ui->progressBar->setAlignment(Qt::AlignCenter);
@@ -154,12 +157,6 @@ void MainWindow::on_optionBtn_clicked()
 }
 
 
-void MainWindow::on_animationBtn_clicked(bool checked)
-{
-
-}
-
-
 void MainWindow::on_saveBtn_clicked()
 {
     QString filename="out_";
@@ -200,86 +197,6 @@ void MainWindow::on_algorithmBox_currentIndexChanged(int index)
     else{
         ui->animationBtn->setEnabled(false);
     }
-}
-
-int MainWindow::ReadHolesPosition()
-{
-    QDomElement doc = xml_file.documentElement();
-    QDomElement elements = doc.firstChildElement("drawing").firstChildElement("board").firstChildElement("elements");
-    QDomElement libraries = doc.firstChildElement("drawing").firstChildElement("board").firstChildElement("libraries");
-    QDomElement atrr,pads;
-
-    QString library_urn,package,rot;
-    double x,y,xp,yp,rad,xpp,ypp;
-
-    if(elements.isNull())
-        return 0;
-
-    auto& X = tsp_.pointX();
-    auto& Y = tsp_.pointY();
-
-    for (QDomNode n = elements.firstChildElement(); !n.isNull(); n = n.nextSiblingElement()) {
-        atrr = n.toElement();
-        library_urn = atrr.attribute("library_urn");
-        package = atrr.attribute("package");
-        rot = atrr.attribute("rot","R0");
-        x = atrr.attribute("x").toDouble();
-        y = atrr.attribute("y").toDouble();
-
-        for(QDomNode m = libraries.firstChildElement(); !m.isNull();m = m.nextSiblingElement()){
-            atrr = m.toElement();
-            if(atrr.attribute("urn")==library_urn){
-                for(QDomNode k = atrr.firstChildElement("packages");!k.isNull();k = k.nextSiblingElement()){
-                    if(k.nodeName()=="packages"){
-                        for(QDomNode i = k.firstChild();!i.isNull();i = i.nextSiblingElement()){
-                            if(package == i.toElement().attribute("name")){
-                                for(QDomNode j = i.firstChild();!j.isNull();j = j.nextSiblingElement()){
-                                    if(j.nodeName()=="pad"){
-                                        pads = j.toElement();
-                                        if(rot == "R0"){
-                                            X.push_back(pads.attribute("x").toDouble()+x);
-                                            Y.push_back(pads.attribute("y").toDouble()+y);
-                                        }
-                                        if(rot == "R90"){
-                                            rad = qDegreesToRadians(90.00);
-                                            xp = pads.attribute("x").toDouble();
-                                            yp = pads.attribute("y").toDouble();
-                                            xpp = xp*qCos(rad)-yp*qSin(rad);
-                                            ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            X.push_back(xpp+x);
-                                            Y.push_back(ypp+y);
-                                        }
-                                        if(rot == "R180"){
-                                            rad = qDegreesToRadians(180.00);
-                                            xp = pads.attribute("x").toDouble();
-                                            yp = pads.attribute("y").toDouble();
-                                            xpp = xp*qCos(rad)-yp*qSin(rad);
-                                            ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            X.push_back(xpp+x);
-                                            Y.push_back(ypp+y);
-                                        }
-                                        if(rot == "R270"){
-                                            rad = qDegreesToRadians(270.00);
-                                            xp = pads.attribute("x").toDouble();
-                                            yp = pads.attribute("y").toDouble();
-                                            xpp = xp*qCos(rad)-yp*qSin(rad);
-                                            ypp = xp*qSin(rad)+yp*qCos(rad);
-                                            X.push_back(xpp+x);
-                                            Y.push_back(ypp+y);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-
-    return 1;
-
 }
 
 double MainWindow::NN_algorithm()

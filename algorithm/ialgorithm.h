@@ -15,7 +15,7 @@ class IAlgorithm
 {
 public:
     virtual ~IAlgorithm() = default;
-    virtual TspResult solve(const TspProblem& tsp, callback = {}) = 0;
+    virtual TspResult solve(TspProblem& tsp, callback = {}) = 0;
 };
 
 

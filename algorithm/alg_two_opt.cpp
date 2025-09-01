@@ -1,6 +1,6 @@
 #include "alg_two_opt.h"
 
-TspResult AlgTwoOpt::solve(const TspProblem& tsp, callback){
+TspResult AlgTwoOpt::solve(TspProblem& tsp, callback){
     QVector<int> permutation;
 
     permutation.reserve(tsp.size() + 1);

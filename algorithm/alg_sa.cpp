@@ -1,6 +1,6 @@
 #include "alg_sa.h"
 
-TspResult AlgSA::solve(const TspProblem& tsp, callback){
+TspResult AlgSA::solve(TspProblem& tsp, callback){
     QVector<int> permutation;
 
     permutation.reserve(tsp.size() + 1);

@@ -8,8 +8,9 @@
 
 class AlgSA : public IAlgorithm
 {
-public:  
-    TspResult solve(const TspProblem& tsp, callback) override;
+public:
+
+    TspResult solve(TspProblem& tsp, callback) override;
 
 };
 

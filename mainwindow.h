@@ -39,6 +39,7 @@ private:
     SA_options w_options;
 
     TspProblem tsp_;
+    TspResult result_;
     std::unique_ptr<ITspLoader> loader_;
 
     QString file_name;
@@ -51,7 +52,7 @@ private:
     double opt2_algorithm(void);
     QVector<int> opt2_swap(QVector<int> permutation,int a,int b);
     void DrawPermutation(void);
-    void DrawPermutation(QVector<int> permutation);
+    void DrawPermutation(const QVector<int>&);
     double ComputeDistance(void);
     double ComputeDistance(QVector<int> permutation);
 };

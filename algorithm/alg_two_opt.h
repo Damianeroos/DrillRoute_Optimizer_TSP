@@ -9,7 +9,7 @@
 class AlgTwoOpt : public IAlgorithm
 {
 public:  
-    TspResult solve(const TspProblem& tsp, callback) override;
+    TspResult solve(TspProblem& tsp, callback) override;
 
 };
 

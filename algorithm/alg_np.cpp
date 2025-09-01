@@ -1,6 +1,6 @@
 #include "alg_np.h"
 
-TspResult AlgNP::solve(const TspProblem& tsp, callback){
+TspResult AlgNP::solve(TspProblem& tsp, callback){
     QVector<int> permutation;
 
     permutation.reserve(tsp.size() + 1);
@@ -10,7 +10,7 @@ TspResult AlgNP::solve(const TspProblem& tsp, callback){
         permutation.push_back(i);
     }
 
-    //tsp.permutation() = permutation;
+    tsp.permutation() = permutation;
     TspResult rval(std::move(permutation), tsp.computeDistance());
     return rval;
 }

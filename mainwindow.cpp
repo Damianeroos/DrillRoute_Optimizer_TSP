@@ -3,6 +3,11 @@
 #include "ui_mainwindow.h"
 #include "qcustomplot.h"
 #include "brdtsploader.h"
+#include "algorithm/ialgorithm.h"
+#include "algorithm/alg_np.h"
+#include "algorithm/alg_nn.h"
+#include "algorithm/alg_sa.h"
+#include "algorithm/alg_two_opt.h"
 
 #include <memory>
 
@@ -66,31 +71,43 @@ void MainWindow::on_startBtn_clicked()
     ui->statusbar->setStyleSheet("color: green");
     ui->statusbar->showMessage("busy...");
 
-    switch (ui->algorithmBox->currentIndex()) {
-    case 0 :
-        ui->finalDistance->setText(QString::number(NP_algorithm()));
-        DrawPermutation();
-        break;
-    case 1 :
-        ui->finalDistance->setText(QString::number(NN_algorithm()));
-        DrawPermutation();
-        break;
-    case 2 :
-        ui->progressBar->setRange(0,w_options.repeat);
-
-        for(int i = 0 ; i < w_options.repeat;i++){
-            ui->progressBar->setFormat("%v/%m");
-            ui->progressBar->setValue(i+1);
-            ui->finalDistance->setText(QString::number(SA_algorithm()));
-            DrawPermutation();
-        }
-        ui->progressBar->setFormat("Complete!!!");
-        break;
-    case 3 :
-        ui->finalDistance->setText(QString::number(opt2_algorithm()));
-        DrawPermutation();
-        break;
+    std::unique_ptr<IAlgorithm> alg;
+    const auto a = static_cast<Algorithm>(ui->algorithmBox->currentData().toInt());
+    switch (a) {
+    case Algorithm::NP:     alg = std::make_unique<AlgNP>(); break;
+    case Algorithm::NN:     alg = std::make_unique<AlgNN>(); break;
+    case Algorithm::SA:     alg = std::make_unique<AlgSA>(); break;
+    case Algorithm::TwoOpt: alg = std::make_unique<AlgTwoOpt>(); break;
     }
+
+    result_ = alg->solve(tsp_);
+    DrawPermutation();
+    ui->finalDistance->setText(QString::number(result_.route));
+//    switch (ui->algorithmBox->currentIndex()) {
+//    case 0 :
+//        ui->finalDistance->setText(QString::number(NP_algorithm()));
+//        DrawPermutation();
+//        break;
+//    case 1 :
+//        ui->finalDistance->setText(QString::number(NN_algorithm()));
+//        DrawPermutation();
+//        break;
+//    case 2 :
+//        ui->progressBar->setRange(0,w_options.repeat);
+
+//        for(int i = 0 ; i < w_options.repeat;i++){
+//            ui->progressBar->setFormat("%v/%m");
+//            ui->progressBar->setValue(i+1);
+//            ui->finalDistance->setText(QString::number(SA_algorithm()));
+//            DrawPermutation();
+//        }
+//        ui->progressBar->setFormat("Complete!!!");
+//        break;
+//    case 3 :
+//        ui->finalDistance->setText(QString::number(opt2_algorithm()));
+//        DrawPermutation();
+//        break;
+//    }
 
     ui->loadBtn->setEnabled(true);
     ui->startBtn->setEnabled(true);
@@ -346,7 +363,7 @@ double MainWindow::opt2_algorithm()
                 new_distance = ComputeDistance(NewPermutation);
 
                 if(ui->animationBtn->isChecked()){
-                    DrawPermutation(NewPermutation);
+                    //DrawPermutation(NewPermutation); pawian naprawic
                     ui->finalDistance->setText(QString::number(best_distance));
                 }
 
@@ -446,7 +463,7 @@ void MainWindow::DrawPermutation()
     ui->customPlot->replot();
 }
 
-void MainWindow::DrawPermutation(QVector<int> permutation)
+void MainWindow::DrawPermutation(const QVector<int>& permutation)
 {
     QVector<double> x(2),y(2);
 
